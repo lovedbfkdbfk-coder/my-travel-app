@@ -84,21 +84,23 @@
 
     <div id="loading" class="loading-mask">데이터 연동 엔진 시동 중...</div>
 
-    <header>
-        <h1>후쿠오카 가족 여행 ✈️</h1>
-        <p>2026.07.22 ~ 07.25 (3박 4일)</p>
-        <div class="flight-info">
-            <div><span class="flight-label">🛫 출국편:</span> <span>부산(13:05) → 후쿠오카(14:05)</span></div>
-            <div><span class="flight-label">🛬 귀국편:</span> <span>후쿠오카(14:55) → 부산(15:55)</span></div>
-        </div>
-        <br>
-        <div class="family-badge">🏠 숙소: レジ던스 호텔 하카타에키미나미</div>
-        
-        <div class="total-budget-header">
-            💵 여행 총 경비 합계: <span id="total-budget-sum">0</span>원 (또는 ￥)
-        </div>
-        <div class="sync-status" id="sync-indicator">🔄 구분형 및 지출 실시간 연동엔진 작동 중</div>
-    </header>
+<header>
+    <input type="text" id="tripTitle" placeholder="여행지 이름을 입력하세요" style="width:100%; font-size:20px; text-align:center; border:none; background:transparent; color:white; font-weight:bold; margin-bottom:5px;">
+    <input type="text" id="tripDate" placeholder="기간을 입력하세요" style="width:100%; font-size:14px; text-align:center; border:none; background:transparent; color:white; margin-bottom:10px;">
+    
+    <div class="flight-info">
+        <div><span class="flight-label">🛫 출국편:</span> <input type="text" id="flightOut" placeholder="출국 정보를 입력하세요" style="width:70%; background:transparent; border:none; color:white;"></div>
+        <div><span class="flight-label">🛬 귀국편:</span> <input type="text" id="flightIn" placeholder="귀국 정보를 입력하세요" style="width:70%; background:transparent; border:none; color:white;"></div>
+    </div>
+    
+    <br>
+    <div class="family-badge">🏠 숙소: <input type="text" id="hotelName" placeholder="숙소 이름을 입력하세요" style="width:70%; background:transparent; border:none; color:white;"></div>
+    
+    <div class="total-budget-header">
+        💵 여행 총 경비 합계: <span id="total-budget-sum">0</span>원 (또는 ￥)
+    </div>
+    <div class="sync-status" id="sync-indicator">🔄 수정사항은 자동으로 저장됩니다.</div>
+</header>
 
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="openTab('day1')">1일차</button>
@@ -883,5 +885,22 @@ window.deleteSnack = async function(slot, deleteIdx) {
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
     </script>
+
+    <script>
+// 각 입력창을 불러오고 저장하는 기능
+const inputs = ['tripTitle', 'tripDate', 'flightOut', 'flightIn', 'hotelName'];
+
+inputs.forEach(id => {
+    const el = document.getElementById(id);
+    
+    // 1. 저장된 내용이 있으면 불러오기
+    el.value = localStorage.getItem(id) || '';
+    
+    // 2. 글자를 쓸 때마다 저장하기
+    el.addEventListener('input', function() {
+        localStorage.setItem(id, this.value);
+    });
+});
+</script>
 </body>
 </html>
