@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>후쿠오카 가족여행 가이드 (동적 간식 추가 기능 추가판)</title>
+    <style>
+        :root {
+            --primary-color: #2B6CB0;
+            --secondary-color: #2D3748;
+            --accent-color: #DD6B20;
+            --snack-color: #D69E2E;
+            --bg-color: #EDF2F7;
+            --card-bg: #FFFFFF;
+            --text-color: #2D3748;
+            --time-color: #E53E3E;
+            --money-color: #38A169;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; padding-bottom: 40px; font-size: 13px; }
+        
+        header { background: linear-gradient(135deg, #3182CE, #2B6CB0); color: white; padding: 22px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        header h1 { font-size: 1.4rem; margin-bottom: 5px; }
+        header p { font-size: 0.85rem; opacity: 0.9; margin-bottom: 8px; }
+        
+        .flight-info { background: rgba(0, 0, 0, 0.15); border-radius: 8px; padding: 8px 12px; margin: 5px auto 10px auto; max-width: 280px; font-size: 0.82rem; line-height: 1.4; text-align: left; display: inline-block; width: 100%; box-sizing: border-box; }
+        .flight-info div { display: flex; justify-content: space-between; }
+        .flight-label { color: #EBF8FF; font-weight: bold; }
+        .family-badge { font-size: 0.8rem; margin-top: 5px; background: rgba(255,255,255,0.2); display:inline-block; padding: 3px 10px; border-radius: 12px; }
+
+        .total-budget-header { background: #2F855A; border-radius: 10px; padding: 8px; margin-top: 10px; font-size: 0.95rem; font-weight: bold; color: #FFF; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+
+        .nav-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { background-color: #CBD5E0; border: none; padding: 10px 14px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; color: #4A5568; cursor: pointer; white-space: nowrap; flex: 1; text-align: center; }
+        .tab-btn.active { background-color: var(--primary-color); color: white; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
+
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.25s ease; }
+
+        .card { background-color: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .card-title { font-size: 1.1rem; font-weight: bold; color: var(--primary-color); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #E2E8F0; padding-bottom: 6px; }
+        .day-budget-badge { font-size: 0.8rem; background-color: #48BB78; color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
+        
+        .timeline { border-left: 2px dashed #CBD5E0; margin-left: 10px; padding-left: 15px; }
+        .timeline-item { margin-bottom: 22px; position: relative; }
+        .timeline-item::before { content: ''; position: absolute; left: -20px; top: 5px; width: 8px; height: 8px; background-color: white; border: 2px solid var(--primary-color); border-radius: 50%; }
+        
+        .time-input { font-size: 0.8rem; font-weight: bold; color: white; background-color: var(--time-color); border: none; padding: 2px 6px; border-radius: 4px; margin-right: 5px; width: 55px; text-align: center; }
+        .spot-name { font-weight: bold; font-size: 1.05rem; color: #1A202C; display: inline-block; vertical-align: middle; }
+        
+        .route-box { background-color: #EBF8FF; border-left: 4px solid #3182CE; padding: 10px; border-radius: 6px; font-size: 0.88rem; margin-top: 8px; color: #2B6CB0; line-height: 1.4; }
+        
+        .restaurant-box { background-color: #FFFAF0; border-left: 4px solid var(--accent-color); padding: 10px; border-radius: 6px; font-size: 0.88rem; margin-top: 6px; }
+        .restaurant-box.snack-box { background-color: #FEFCBF; border-left: 4px solid var(--snack-color); margin-bottom: 6px; }
+        
+        .rest-grid { display: flex; gap: 5px; margin-bottom: 5px; }
+        .type-select { width: 80px; padding: 6px; border: 1px solid #CBD5E0; border-radius: 4px; font-size: 0.85rem; font-weight: bold; background-color: #FFF; }
+        .rest-select { flex: 1; padding: 6px; border: 1px solid #CBD5E0; border-radius: 4px; font-size: 0.88rem; color: #2D3748; background-color: white; font-weight: bold; }
+        
+        .spot-budget-container { display: flex; align-items: center; background-color: #F7FAFC; border: 1px dashed #CBD5E0; padding: 5px 8px; border-radius: 6px; margin-top: 6px; font-size: 0.82rem; color: #4A5568; max-width: 190px; }
+        .spot-budget-input { border: none; background: transparent; font-weight: bold; color: var(--money-color); width: 90px; text-align: right; padding-right: 3px; font-size: 0.85rem; }
+        .spot-budget-input:focus { outline: none; background-color: #FFF; }
+
+        .map-btn { display: inline-block; background-color: #4285F4; color: white; text-decoration: none; padding: 6px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: bold; margin-top: 8px; box-shadow: 0 2px 4px rgba(66,133,244,0.2); border: none; cursor: pointer; }
+        .rest-map-btn { background-color: #ED8936; box-shadow: 0 2px 4px rgba(237,137,54,0.2); margin-right: 5px; margin-top: 0; }
+
+        .add-btn-container { text-align: center; margin-top: 15px; }
+        .add-btn { background-color: #38A169; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
+        
+        .checklist-container { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+        .checklist-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #F7FAFC; border-radius: 6px; border-bottom: 1px solid #E2E8F0; }
+        .mini-del-btn { background: none; border: none; color: #E53E3E; font-size: 0.9rem; cursor: pointer; padding: 2px 5px; font-weight: bold; }
+        .badge { display: inline-block; padding: 2px 6px; font-size: 0.75rem; font-weight: bold; border-radius: 4px; color: white; margin-right: 5px; }
+        .badge.meal { background-color: var(--accent-color); }
+        .badge.snack { background-color: var(--snack-color); }
+
+        .sync-status { font-size: 0.75rem; color: #EBF8FF; background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 10px; display: inline-block; margin-top: 5px; }
+        .loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; font-weight: bold; z-index: 1000; color: #2B6CB0; font-size: 16px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="loading" class="loading-mask">데이터 연동 엔진 시동 중...</div>
+
+    <header>
+        <h1>후쿠오카 가족 여행 ✈️</h1>
+        <p>2026.07.22 ~ 07.25 (3박 4일)</p>
+        <div class="flight-info">
+            <div><span class="flight-label">🛫 출국편:</span> <span>부산(13:05) → 후쿠오카(14:05)</span></div>
+            <div><span class="flight-label">🛬 귀국편:</span> <span>후쿠오카(14:55) → 부산(15:55)</span></div>
+        </div>
+        <br>
+        <div class="family-badge">🏠 숙소: レジ던스 호텔 하카타에키미나미</div>
+        
+        <div class="total-budget-header">
+            💵 여행 총 경비 합계: <span id="total-budget-sum">0</span>원 (또는 ￥)
+        </div>
+        <div class="sync-status" id="sync-indicator">🔄 구분형 및 지출 실시간 연동엔진 작동 중</div>
+    </header>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="openTab('day1')">1일차</button>
+        <button class="tab-btn" onclick="openTab('day2')">2일차</button>
+        <button class="tab-btn" onclick="openTab('day3')">3일차</button>
+        <button class="tab-btn" onclick="openTab('day4')">4일차</button>
+        <button class="tab-btn" onclick="openTab('restaurants')">🍴 맛집/간식 관리</button>
+        <button class="tab-btn" onclick="openTab('pack')">🎒 준비물</button>
+    </div>
+
+    <!-- 1일차 -->
+    <div id="day1" class="content-section active">
+        <div class="card">
+            <div class="card-title">
+                <span>▶ 1일차: 입국 & 시내 산책</span>
+                <span class="day-budget-badge">1일차 지출: <span id="budget_day1">0</span></span>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t1_1" value="14:05" onchange="saveInputData('t1_1')">
+                    <div class="spot-name">후쿠오카 공항 입국 & 수하물 수령</div>
+                    <div class="route-box"><strong>🚌 공항 이동 상세 안내:</strong><br>• 국제선 터미널 전면 셔틀버스 정류장에서 <b>무료 셔틀버스</b> 탑승 ➔ 국내선 터미널(지하철역)로 이동 (약 10~15분 소요).</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_1" placeholder="0" onchange="saveInputData('b_1_1');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t1_2" value="14:50" onchange="saveInputData('t1_2')">
+                    <div class="spot-name">지하철 공항선 탑승 ➔ 하카타역 이동</div>
+                    <div class="route-box"><strong>🚇 지하철 상세 안내:</strong><br>• 국내선 터미널 지하 <b>후쿠오카공항역</b> ➔ <b>하카타역</b> 이동 (2정거장, 약 5분 소요).</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_2" placeholder="0" onchange="saveInputData('b_1_2');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t1_3" value="15:10" onchange="saveInputData('t1_3')">
+                    <div class="spot-name">하카타역 치쿠시구치 시내버스 탑승 ➔ 숙소</div>
+                    <div class="route-box"><strong>🚌 버스 상세 안내:</strong><br>• 하카타역 치쿠시구치 정류장에서 <b>44번 버스</b> 탑승 ➔ <b>미노시마 2초메(美野島二丁目)</b> 정류장 하차 후 도보 3분.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_3" placeholder="0" onchange="saveInputData('b_1_3');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t1_4" value="15:40" onchange="saveInputData('t1_4')">
+                    <div class="spot-name">숙소 체크인 및 짐 보관, 정비</div>
+                    <div class="route-box">🏠 <b>레지던스 호텔 하카타에키미나미</b> 정비 후 가벼운 복장으로 도보 이동 출발.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_4" placeholder="0" onchange="saveInputData('b_1_4');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t1_snack1" value="16:20" onchange="saveInputData('t1_snack1')">
+                    <div class="spot-name">🍰 1일차 오후 간식 타임 (여러 개 선택 가능)</div>
+                    <div id="container_d1_snack1" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_snack1" placeholder="0" onchange="saveInputData('b_1_snack1');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t1_5" value="17:00" onchange="saveInputData('t1_5')">
+                    <div class="spot-name">캐널시티 하카타 분수쇼 관람 & 산책</div>
+                    <div class="route-box"><strong>🚶‍♂️ 이동 상세:</strong> 숙소에서 도보 약 15~18분 이동. 대형 복합 쇼핑몰 구경 및 정각 분수쇼 관람.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_5" placeholder="0" onchange="saveInputData('b_1_5');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t1_dinner" value="18:30" onchange="saveInputData('t1_dinner')">
+                    <div class="spot-name">🍽️ 1일차 저녁 식사</div>
+                    <div class="restaurant-box">
+                        <div class="rest-grid">
+                            <select class="type-select" id="type_d1_dinner" onchange="filterDropdownBySelection('d1_dinner')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
+                            <select class="rest-select" id="sel_d1_dinner" onchange="selectRestaurant('d1_dinner')"><option value="">-- 로딩중 --</option></select>
+                        </div>
+                        <a class="map-btn rest-map-btn" id="btn_d1_dinner" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
+                    </div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_dinner" placeholder="0" onchange="saveInputData('b_1_dinner');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t1_6" value="20:00" onchange="saveInputData('t1_6')">
+                    <div class="spot-name">나카스 강변 미나메 야경 산책</div>
+                    <div class="route-box"><strong>🚶‍♂️ 이동 상세:</strong> 캐널시티 바로 옆 나카스 강변을 따라 산책하며 일본 특유의 포장마차(야타이) 거리 정취 구경.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_6" placeholder="0" onchange="saveInputData('b_1_6');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t1_snack2" value="21:00" onchange="saveInputData('t1_snack2')">
+                    <div class="spot-name">🌙 1일차 야식/디저트 간식 타임</div>
+                    <div id="container_d1_snack2" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_snack2" placeholder="0" onchange="saveInputData('b_1_snack2');calculateLiveBudgets();"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2일차 -->
+    <div id="day2" class="content-section">
+        <div class="card">
+            <div class="card-title">
+                <span>▶ 2일차: 다자이후 & 모모치 야경</span>
+                <span class="day-budget-badge">2일차 지출: <span id="budget_day2">0</span></span>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_breakfast" value="08:00" onchange="saveInputData('t2_breakfast')">
+                    <div class="spot-name">☀️ 2일차 아침 식사</div>
+                    <div class="restaurant-box">
+                        <div class="rest-grid">
+                            <select class="type-select" id="type_d2_breakfast" onchange="filterDropdownBySelection('d2_breakfast')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
+                            <select class="rest-select" id="sel_d2_breakfast" onchange="selectRestaurant('d2_breakfast')"><option value="">-- 로딩중 --</option></select>
+                        </div>
+                        <a class="map-btn rest-map-btn" id="btn_d2_breakfast" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
+                    </div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_breakfast" placeholder="0" onchange="saveInputData('b_2_breakfast');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_1" value="09:00" onchange="saveInputData('t2_1')">
+                    <div class="spot-name">하카타 버스터미널 ➔ 다자이후 이동</div>
+                    <div class="route-box"><strong>🚌 버스 상세 안내:</strong><br>• 하카타 버스터미널 1층 11번 승차장 ➔ <b>다자이후행 직행버스(우메도노호 선)</b> 탑승 (약 40분 소요).</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_1" placeholder="0" onchange="saveInputData('b_2_1');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_2" value="09:50" onchange="saveInputData('t2_2')">
+                    <div class="spot-name">다자이후 텐만구 및 상점가 관광</div>
+                    <div class="route-box"><strong>🚶‍♂️ 코스 안내:</strong> 학문의 신을 모시는 신사 관람 및 독특한 인테리어의 스타벅스 컨셉스토어 방문.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_2" placeholder="0" onchange="saveInputData('b_2_2');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_snack1" value="11:00" onchange="saveInputData('t2_snack1')">
+                    <div class="spot-name">🍡 2일차 오전 간식 타임 (우메가에 모찌 등)</div>
+                    <div id="container_d2_snack1" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_snack1" placeholder="0" onchange="saveInputData('b_2_snack1');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_lunch" value="12:30" onchange="saveInputData('t2_lunch')">
+                    <div class="spot-name">🍽️ 2일차 점심 식사</div>
+                    <div class="restaurant-box">
+                        <div class="rest-grid">
+                            <select class="type-select" id="type_d2_lunch" onchange="filterDropdownBySelection('d2_lunch')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
+                            <select class="rest-select" id="sel_d2_lunch" onchange="selectRestaurant('d2_lunch')"><option value="">-- 로딩중 --</option></select>
+                        </div>
+                        <a class="map-btn rest-map-btn" id="btn_d2_lunch" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
+                    </div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_lunch" placeholder="0" onchange="saveInputData('b_2_lunch');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_3" value="14:00" onchange="saveInputData('t2_3')">
+                    <div class="spot-name">다자이후 ➔ 하카타 복귀 후 모모치 해변 이동</div>
+                    <div class="route-box"><strong>🚌 버스 환승 안내:</strong><br>① 다자이후 정류장에서 직행버스로 하카타 복귀.<br>② 하카타 버스터미널 1층 6번 승차장 ➔ <b>306번 버스</b> 탑승 ➔ <b>후쿠오카 타워 남문</b> 하차.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_3" placeholder="0" onchange="saveInputData('b_2_3');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_4" value="15:30" onchange="saveInputData('t2_4')">
+                    <div class="spot-name">씨사이드 모모치 해변공원 & 마리존 산책</div>
+                    <div class="route-box"><strong>🏖️ 명소 안내:</strong> 인공 해변과 이국적인 해상 예식장 마리존 배경으로 기념사진 촬영.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_4" placeholder="0" onchange="saveInputData('b_2_4');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_snack2" value="16:30" onchange="saveInputData('t2_snack2')">
+                    <div class="spot-name">☕ 2일차 오후 간식 타임 (해변 카페 등)</div>
+                    <div id="container_d2_snack2" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_snack2" placeholder="0" onchange="saveInputData('b_2_snack2');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_5" value="17:30" onchange="saveInputData('t2_5')">
+                    <div class="spot-name">후쿠오카 타워 전망대 야경 관람</div>
+                    <div class="route-box"><strong>🗼 타워 안내:</strong> 멋진 후쿠오카 시내 밤하늘과 해안선 야경 감상 (매표소에서 티켓 구매 후 엘리베이터 탑승).</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_5" placeholder="0" onchange="saveInputData('b_2_5');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_dinner" value="18:45" onchange="saveInputData('t2_dinner')">
+                    <div class="spot-name">🍽️ 2일차 저녁 식사</div>
+                    <div class="restaurant-box">
+                        <div class="rest-grid">
+                            <select class="type-select" id="type_d2_dinner" onchange="filterDropdownBySelection('d2_dinner')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
+                            <select class="rest-select" id="sel_d2_dinner" onchange="selectRestaurant('d2_dinner')"><option value="">-- 로딩중 --</option></select>
+                        </div>
+                        <a class="map-btn rest-map-btn" id="btn_d2_dinner" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
+                    </div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_dinner" placeholder="0" onchange="saveInputData('b_2_dinner');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_6" value="20:30" onchange="saveInputData('t2_6')">
+                    <div class="spot-name">모모치 ➔ 하카타 숙소 복귀 안내</div>
+                    <div class="route-box"><strong>🚌 시내버스 복귀:</strong> 후쿠오카 타워 정류장에서 <b>302번 또는 306번 버스</b> 탑승 ➔ 하카타역 복귀 후 숙소 도보 이동.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_6" placeholder="0" onchange="saveInputData('b_2_6');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t2_snack3" value="21:30" onchange="saveInputData('t2_snack3')">
+                    <div class="spot-name">🍦 2일차 야식 간식 타임</div>
+                    <div id="container_d2_snack3" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_snack3" placeholder="0" onchange="saveInputData('b_2_snack3');calculateLiveBudgets();"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3일차 -->
+    <div id="day3" class="content-section">
+        <div class="card">
+            <div class="card-title">
+                <span>▶ 3일차: 모지코 & 고쿠라 투어</span>
+                <span class="day-budget-badge">3일차 지출: <span id="budget_day3">0</span></span>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_breakfast" value="08:00" onchange="saveInputData('t3_breakfast')">
+                    <div class="spot-name">☀️ 3일차 아침 식사</div>
+                    <div class="restaurant-box">
+                        <div class="rest-grid">
+                            <select class="type-select" id="type_d3_breakfast" onchange="filterDropdownBySelection('d3_breakfast')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
+                            <select class="rest-select" id="sel_d3_breakfast" onchange="selectRestaurant('d3_breakfast')"><option value="">-- 로딩중 --</option></select>
+                        </div>
+                        <a class="map-btn rest-map-btn" id="btn_d3_breakfast" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
+                    </div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_breakfast" placeholder="0" onchange="saveInputData('b_3_breakfast');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_1" value="08:50" onchange="saveInputData('t3_1')">
+                    <div class="spot-name">하카타역 ➔ 모지코역 열차 이동</div>
+                    <div class="route-box"><strong>🚄 JR 열차 이용 안내 (재래선 기준):</strong><br>• 하카타역 ➔ <b>JR 가고시마 본선(쾌속/구간쾌속)</b> 탑승 ➔ <b>모지코역</b> 종점 직행 하차 (약 1시간 20~30분 소요).</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_1" placeholder="0" onchange="saveInputData('b_3_1');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_2" value="10:20" onchange="saveInputData('t3_2')">
+                    <div class="spot-name">모지코 레트로 지구 산책 & 블루윙 모지 도보교</div>
+                    <div class="route-box"><strong>🚶‍♂️ 코스 안내:</strong> 앤틱한 모지코 역사 구경, 시간에 맞춰 열리는 열개교(블루윙 모지) 건너기, 레트로 감성 건물 감상.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_2" placeholder="0" onchange="saveInputData('b_3_2');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_snack1" value="10:50" onchange="saveInputData('t3_snack1')">
+                    <div class="spot-name">🍌 3일차 오전 간식 타임 (바나나 포장마차 등)</div>
+                    <div id="container_d3_snack1" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_snack1" placeholder="0" onchange="saveInputData('b_3_snack1');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_lunch" value="12:00" onchange="saveInputData('t3_lunch')">
+                    <div class="spot-name">🍽️ 3일차 점심 식사 (모지코 야키카레 필수 코스)</div>
+                    <div class="restaurant-box">
+                        <div class="rest-grid">
+                            <select class="type-select" id="type_d3_lunch" onchange="filterDropdownBySelection('d3_lunch')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
+                            <select class="rest-select" id="sel_d3_lunch" onchange="selectRestaurant('d3_lunch')"><option value="">-- 로딩중 --</option></select>
+                        </div>
+                        <a class="map-btn rest-map-btn" id="btn_d3_lunch" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
+                    </div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_lunch" placeholder="0" onchange="saveInputData('b_3_lunch');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_3" value="13:30" onchange="saveInputData('t3_3')">
+                    <div class="spot-name">모지코역 ➔ 고쿠라역 이동 (기차)</div>
+                    <div class="route-box"><strong>🚇 일반 열차 안내:</strong> 모지코역 ➔ JR 가고시마 본선 탑승 ➔ <b>고쿠라역</b> 하차 (약 15분 소요).</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_3" placeholder="0" onchange="saveInputData('b_3_3');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_4" value="14:00" onchange="saveInputData('t3_4')">
+                    <div class="spot-name">고쿠라 성 및 리버워크 기타큐슈 산책</div>
+                    <div class="route-box"><strong>🚶‍♂️ 코스 안내:</strong> 고쿠라역에서 도보 10분 거리의 전통 고쿠라 성 주변과 현대적 복합쇼핑몰 리버워크 광장 관광.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_4" placeholder="0" onchange="saveInputData('b_3_4');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_snack2" value="15:30" onchange="saveInputData('t3_snack2')">
+                    <div class="spot-name">🍩 3일차 오후 간식 타임 (시로야 베이커리 등)</div>
+                    <div id="container_d3_snack2" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_snack2" placeholder="0" onchange="saveInputData('b_3_snack2');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_5" value="16:30" onchange="saveInputData('t3_5')">
+                    <div class="spot-name">탄가 시장 구경 후 고쿠라역 복귀 준비</div>
+                    <div class="route-box"><strong>🛒 재래시장 안내:</strong> 기타큐슈의 부엌이라 불리는 오래된 전통 탄가 시장 골목길 소소하게 구경하기.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_5" placeholder="0" onchange="saveInputData('b_3_5');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_6" value="17:30" onchange="saveInputData('t3_6')">
+                    <div class="spot-name">고쿠라역 ➔ 하카타역 복귀 기차</div>
+                    <div class="route-box"><strong>🚄 기차 이동 안내:</strong> 고쿠라역 ➔ JR 가고시마 본선(특급 소닉 또는 쾌속열차) 탑승 ➔ 하카타역 복귀 (특급 기준 약 50분 소요).</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_6" placeholder="0" onchange="saveInputData('b_3_6');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_dinner" value="18:45" onchange="saveInputData('t3_dinner')">
+                    <div class="spot-name">🍽️ 3일차 저녁 식사 (하카타역 주변 맛집)</div>
+                    <div class="restaurant-box">
+                        <div class="rest-grid">
+                            <select class="type-select" id="type_d3_dinner" onchange="filterDropdownBySelection('d3_dinner')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
+                            <select class="rest-select" id="sel_d3_dinner" onchange="selectRestaurant('d3_dinner')"><option value="">-- 로딩중 --</option></select>
+                        </div>
+                        <a class="map-btn rest-map-btn" id="btn_d3_dinner" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
+                    </div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_dinner" placeholder="0" onchange="saveInputData('b_3_dinner');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t3_snack3" value="21:00" onchange="saveInputData('t3_snack3')">
+                    <div class="spot-name">🍻 3일차 편의점 야식 타임</div>
+                    <div id="container_d3_snack3" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_snack3" placeholder="0" onchange="saveInputData('b_3_snack3');calculateLiveBudgets();"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4일차 -->
+    <div id="day4" class="content-section">
+        <div class="card">
+            <div class="card-title">
+                <span>▶ 4일차: 하카타 쇼핑 & 출국</span>
+                <span class="day-budget-badge">4일차 지출: <span id="budget_day4">0</span></span>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t4_breakfast" value="08:30" onchange="saveInputData('t4_breakfast')">
+                    <div class="spot-name">☀️ 4일차 아침 식사</div>
+                    <div class="restaurant-box">
+                        <div class="rest-grid">
+                            <select class="type-select" id="type_d4_breakfast" onchange="filterDropdownBySelection('d4_breakfast')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
+                            <select class="rest-select" id="sel_d4_breakfast" onchange="selectRestaurant('d4_breakfast')"><option value="">-- 로딩중 --</option></select>
+                        </div>
+                        <a class="map-btn rest-map-btn" id="btn_d4_breakfast" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
+                    </div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_breakfast" placeholder="0" onchange="saveInputData('b_4_breakfast');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t4_1" value="09:30" onchange="saveInputData('t4_1')">
+                    <div class="spot-name">숙소 체크아웃 후 하카타역 코인라커 캐리어 보관</div>
+                    <div class="route-box"><strong>🧳 체크아웃:</strong> 짐 정리 후 버스(44번)를 타고 하카타역으로 이동해 라커에 짐 맡기기.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_1" placeholder="0" onchange="saveInputData('b_4_1');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t4_2" value="10:00" onchange="saveInputData('t4_2')">
+                    <div class="spot-name">하카타 한큐 백화점 및 아뮤플라자 막바지 기념품 쇼핑</div>
+                    <div class="route-box"><strong>🛍️ 쇼핑 코스:</strong> 손수건, 기념 식품류 및 백화점 지하 가토 페스타 하라다 러스크 등 구매.</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_2" placeholder="0" onchange="saveInputData('b_4_2');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t4_snack1" value="10:45" onchange="saveInputData('t4_snack1')">
+                    <div class="spot-name">🍡 4일차 오전 간식 타임 (일 포르노 델 미뇽 크로와상 등)</div>
+                    <div id="container_d4_snack1" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_snack1" placeholder="0" onchange="saveInputData('b_4_snack1');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t4_lunch" value="11:30" onchange="saveInputData('t4_lunch')">
+                    <div class="spot-name">🍽️ 4일차 점심 식사 (하카타역 내 마지막 식사)</div>
+                    <div class="restaurant-box">
+                        <div class="rest-grid">
+                            <select class="type-select" id="type_d4_lunch" onchange="filterDropdownBySelection('d4_lunch')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
+                            <select class="rest-select" id="sel_d4_lunch" onchange="selectRestaurant('d4_lunch')"><option value="">-- 로딩중 --</option></select>
+                        </div>
+                        <a class="map-btn rest-map-btn" id="btn_d4_lunch" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
+                    </div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_lunch" placeholder="0" onchange="saveInputData('b_4_lunch');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t4_3" value="12:40" onchange="saveInputData('t4_3')">
+                    <div class="spot-name">하카타역 출발 ➔ 후쿠오카 공항 이동</div>
+                    <div class="route-box"><strong>🚇 지하철 & 셔틀버스 귀국안내:</strong><br>① 하카타역에서 지하철 공항선 탑승 ➔ 후쿠오카공항역 하차.<br>② 국내선 터미널 전면에서 <b>무료 셔틀버스</b> 탑승 ➔ 국제선 터미널 이동 (비행기 출발 2시간 전 도착 필수).</div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_3" placeholder="0" onchange="saveInputData('b_4_3');calculateLiveBudgets();"></div>
+                </div>
+                <div class="timeline-item">
+                    <input type="text" class="time-input" id="t4_snack2" value="13:40" onchange="saveInputData('t4_snack2')">
+                    <div class="spot-name">🛫 4일차 면세점 인도 및 마지막 간식 타임</div>
+                    <div id="container_d4_snack2" style="margin-top:6px;"></div>
+                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_snack2" placeholder="0" onchange="saveInputData('b_4_snack2');calculateLiveBudgets();"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 맛집/간식 관리 탭 -->
+    <div id="restaurants" class="content-section">
+        <div class="card">
+            <div class="card-title">🍴 맛집 및 간식 데이터베이스 등록/수정</div>
+            <form id="shopForm" onsubmit="return false;">
+                <input type="hidden" id="editingId" value="">
+                <table style="width:100%; margin-bottom:10px;">
+                    <tr>
+                        <th style="width:100px;">항목 구분</th>
+                        <td>
+                            <select id="shopType" style="padding:5px; font-weight:bold; border:1px solid #ddd;">
+                                <option value="식사">🍴 식사 (식당)</option>
+                                <option value="간식">🍰 간식 (디저트/카페/야식)</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>가게 이름</th>
+                        <td><input type="text" id="shopName" placeholder="예: 무텐카 스시" required style="width:100%;"></td>
+                    </tr>
+                    <tr>
+                        <th>구글맵 링크</th>
+                        <td><input type="text" id="shopLink" placeholder="🔗 구글맵 주소 복사 붙여넣기" style="width:100%;"></td>
+                    </tr>
+                    <tr>
+                        <th>간단 메모</th>
+                        <td><input type="text" id="shopMemo" placeholder="예: 크레페 맛집" style="width:100%;"></td>
+                    </tr>
+                </table>
+                <div style="text-align:right;">
+                    <button type="button" id="cancelBtn" style="display:none; padding:6px 15px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer;" onclick="clearShopForm()">취소</button>
+                    <button type="button" id="saveBtn" class="add-btn" style="background:#e67e22; padding:6px 20px; font-size:0.85rem; margin-top:0;">서버에 저장</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📜 등록 리스트 (구분별 가나다순 자동 정렬)</div>
+            <div class="checklist-container" id="restaurant-list-container"></div>
+        </div>
+    </div>
+
+    <!-- 준비물 탭 -->
+    <div id="pack" class="content-section">
+        <div class="card">
+            <div class="card-title">🎒 가족 여행 준비물 체크리스트</div>
+            <div class="checklist-container" id="custom-pack-container"></div>
+            <div class="add-btn-container">
+                <button class="add-btn" style="background-color: #2B6CB0;" onclick="addNewPackItem()">➕ 준비물 추가</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📡 파이어베이스 실시간 모듈 스크립트 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBS7GSu0TjyAXm9efKFgUkL-Jjr5nw_7NM",
+            authDomain: "overtime-c90a1.firebaseapp.com",
+            databaseURL: "https://overtime-c90a1-default-rtdb.firebaseio.com",
+            projectId: "overtime-c90a1",
+            storageBucket: "overtime-c90a1.firebasestorage.app",
+            messagingSenderId: "237172347836",
+            appId: "1:237172347836:web:3c47941cd94d24744f51b9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let restaurantItems = [];
+        let packItems = [];
+        let currentDBInputs = {}; // 최신 DB 입력 상태 백업
+        
+        // 고정형 식사 슬롯 리스트
+        const mealSlots = [
+            'd1_dinner', 'd2_breakfast', 'd2_lunch', 'd2_dinner',
+            'd3_breakfast', 'd3_lunch', 'd3_dinner', 'd4_breakfast', 'd4_lunch'
+        ];
+
+        // 동적 확장형 간식 그룹 타겟 리스트
+        const snackSlots = [
+            'd1_snack1', 'd1_snack2', 'd2_snack1', 'd2_snack2', 'd2_snack3',
+            'd3_snack1', 'd3_snack2', 'd3_snack3', 't4_snack1', 'd4_snack1', 'd4_snack2'
+        ];
+
+        function initRealtimeEngine() {
+            document.getElementById('loading').style.display = 'flex';
+
+            // 1. 맛집/간식 통합 데이터 리스너
+            onValue(ref(db, 'gourmet_guide'), (snapshot) => {
+                const data = snapshot.val();
+                restaurantItems = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                restaurantItems.sort((a, b) => {
+                    if ((a.shopType || '식사') !== (b.shopType || '식사')) {
+                        return (a.shopType || '식사').localeCompare(b.shopType || '식사', 'ko');
+                    }
+                    return (a.shopName || '').localeCompare(b.shopName || '', 'ko');
+                });
+                renderRestaurantsList();
+                updateStaticMealDropdowns();
+                renderAllDynamicSnackContainers();
+                document.getElementById('loading').style.display = 'none';
+            });
+
+            // 2. 입력 데이터 바인딩 리스너
+            onValue(ref(db, 'planner_inputs'), (snapshot) => {
+                const data = snapshot.val() || {};
+                currentDBInputs = data;
+                
+                // 식사 드롭다운 초기 채우기
+                mealSlots.forEach(slot => {
+                    const typeKey = `selectedType_${slot}`;
+                    if (data[typeKey] && document.getElementById('type_' + slot)) {
+                        document.getElementById('type_' + slot).value = data[typeKey];
+                    }
+                });
+                updateStaticMealDropdowns();
+
+                // 일반 엘리먼트 값 세팅 (예산, 타임 등)
+                Object.keys(data).forEach(id => {
+                    if (!id.startsWith('selected_') && !id.startsWith('selectedType_')) {
+                        const el = document.getElementById(id);
+                        if (el && document.activeElement !== el) el.value = data[id];
+                    }
+                });
+
+                // 식사 선택 매칭 및 지도 버튼 업데이트
+                mealSlots.forEach(slot => {
+                    const el = document.getElementById('sel_' + slot);
+                    if (el && data['selected_' + slot]) {
+                        el.value = data['selected_' + slot];
+                    }
+                    updateMealMapButton(slot);
+                });
+
+                // 간식 컨테이너 실시간 재생성
+                renderAllDynamicSnackContainers();
+                window.calculateLiveBudgets();
+            });
+
+            // 3. 준비물 리스트 리스너
+            onValue(ref(db, 'planner_packs'), (snapshot) => {
+                const data = snapshot.val();
+                packItems = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                renderPackList();
+            });
+        }
+
+        window.saveInputData = async function(id) {
+            const val = document.getElementById(id).value;
+            await set(ref(db, `planner_inputs/${id}`), val);
+        };
+
+        window.calculateLiveBudgets = function() {
+            let total = 0;
+            for(let d=1; d<=4; d++) {
+                let daySum = 0;
+                const targets = document.querySelectorAll(`.data-budget-day${d}`);
+                targets.forEach(input => {
+                    const val = parseFloat(input.value) || 0;
+                    daySum += val;
+                });
+                const dayBadge = document.getElementById(`budget_day${d}`);
+                if(dayBadge) dayBadge.innerText = daySum.toLocaleString();
+                total += daySum;
+            }
+            const totalBox = document.getElementById('total-budget-sum');
+            if(totalBox) totalBox.innerText = total.toLocaleString();
+        };
+
+        // --- 맛집/간식 DB 등록 핸들러 ---
+        async function handleSaveShop() {
+            const shopType = document.getElementById('shopType').value;
+            const shopName = document.getElementById('shopName').value.trim();
+            const shopLink = document.getElementById('shopLink').value.trim();
+            const shopMemo = document.getElementById('shopMemo').value.trim();
+            const editId = document.getElementById('editingId').value;
+
+            if(!shopName) return alert("이름을 입력해주세요.");
+            const data = { shopType, shopName, shopLink, shopMemo };
+
+            if(editId) {
+                await set(ref(db, `gourmet_guide/${editId}`), data);
+            } else {
+                await set(push(ref(db, 'gourmet_guide')), data);
+            }
+            clearShopForm();
+        }
+        document.getElementById('saveBtn').onclick = handleSaveShop;
+
+        function renderRestaurantsList() {
+            const container = document.getElementById('restaurant-list-container');
+            container.innerHTML = '';
+            if(restaurantItems.length === 0) {
+                container.innerHTML = '<p style="color:#aaa; text-align:center; padding:15px;">등록된 데이터가 없습니다.</p>';
+                return;
+            }
+            restaurantItems.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'checklist-item';
+                const typeClass = (item.shopType === '간식') ? 'snack' : 'meal';
+                let goLink = item.shopLink ? item.shopLink : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.shopName)}`;
+                
+                itemDiv.innerHTML = `
+                    <div style="text-align:left;">
+                        <span class="badge ${typeClass}">${item.shopType || '식사'}</span>
+                        <strong style="font-size:14px; color:#2B6CB0;">${item.shopName}</strong> 
+                        <span style="color:#666; margin-left:10px;">${item.shopMemo || ''}</span>
+                    </div>
+                    <div>
+                        <a class="map-btn rest-map-btn" href="${goLink}" target="_blank" style="margin-top:0; padding:4px 10px;">🗺️ 지도</a>
+                        <button class="mini-del-btn" style="color:#27ae60; margin-right:5px;" onclick="startEditShop('${item.id}')">✏️</button>
+                        <button class="mini-del-btn" onclick="deleteShop('${item.id}')">❌</button>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        window.startEditShop = function(id) {
+            const item = restaurantItems.find(i => i.id === id);
+            if(!item) return;
+            document.getElementById('editingId').value = id;
+            document.getElementById('shopType').value = item.shopType || '식사';
+            document.getElementById('shopName').value = item.shopName;
+            document.getElementById('shopLink').value = item.shopLink || '';
+            document.getElementById('shopMemo').value = item.shopMemo || '';
+            document.getElementById('saveBtn').innerText = "수정 완료";
+            document.getElementById('cancelBtn').style.display = "inline-block";
+        };
+
+        window.clearShopForm = function() {
+            document.getElementById('editingId').value = "";
+            document.getElementById('shopName').value = "";
+            document.getElementById('shopLink').value = "";
+            document.getElementById('shopMemo').value = "";
+            document.getElementById('saveBtn').innerText = "서버에 저장";
+            document.getElementById('cancelBtn').style.display = "none";
+        };
+
+        window.deleteShop = async function(id) {
+            if(confirm('삭제하시겠습니까?')) {
+                await remove(ref(db, `gourmet_guide/${id}`));
+            }
+        };
+
+        // --- [식사 전용] 고정 렌더러 로직 ---
+        window.filterDropdownBySelection = async function(slot) {
+            const typeEl = document.getElementById('type_' + slot);
+            await set(ref(db, `planner_inputs/selectedType_${slot}`), typeEl.value);
+            await set(ref(db, `planner_inputs/selected_${slot}`), "");
+            updateSingleMealDropdown(slot, typeEl.value);
+        };
+
+        function updateStaticMealDropdowns() {
+            mealSlots.forEach(slot => {
+                const typeEl = document.getElementById('type_' + slot);
+                if(typeEl) updateSingleMealDropdown(slot, typeEl.value);
+            });
+        }
+
+        function updateSingleMealDropdown(slot, filterType) {
+            const selectElement = document.getElementById('sel_' + slot);
+            if (!selectElement) return;
+            const currentVal = selectElement.value;
+            selectElement.innerHTML = `-- ${filterType} 선택 --`;
+            
+            const filtered = restaurantItems.filter(item => (item.shopType || '식사') === filterType);
+            filtered.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.textContent = item.shopName;
+                selectElement.appendChild(opt);
+            });
+            selectElement.value = currentVal;
+        }
+
+        window.selectRestaurant = async function(slot) {
+            const el = document.getElementById('sel_' + slot);
+            await set(ref(db, `planner_inputs/selected_${slot}`), el.value);
+            updateMealMapButton(slot);
+        };
+
+        function updateMealMapButton(slot) {
+            const selectElement = document.getElementById('sel_' + slot);
+            const mapBtn = document.getElementById('btn_' + slot);
+            if (!selectElement || !mapBtn) return;
+
+            const selectedId = selectElement.value;
+            const targetItem = restaurantItems.find(i => i.id === selectedId);
+
+            if (targetItem) {
+                mapBtn.href = targetItem.shopLink ? targetItem.shopLink : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(targetItem.shopName)}`;
+                mapBtn.style.display = "inline-block";
+            } else {
+                mapBtn.style.display = "none";
+            }
+        }
+
+
+    // --- ✨ [간식 전용] 리스트업 방식 동적 생성 엔진 ---
+function renderAllDynamicSnackContainers() {
+    snackSlots.forEach(slot => {
+        const parentContainer = document.getElementById('container_' + slot);
+        if (!parentContainer) return;
+
+        // 1. 현재 이 슬롯에 저장된 간식 리스트 가져오기
+        let savedList = [];
+        let idx = 0;
+        while (currentDBInputs[`${slot}_item_${idx}`]) {
+            savedList.push({
+                id: currentDBInputs[`${slot}_item_${idx}`],
+                index: idx
+            });
+            idx++;
+        }
+
+        parentContainer.innerHTML = '';
+
+        // 2. 상단에 고정 선택 드롭박스 생성
+        const selectEl = document.createElement('select');
+        selectEl.className = 'rest-select';
+        selectEl.style.marginBottom = "10px";
+        selectEl.innerHTML = `<option value="">+ 간식 추가하기</option>`;
+        
+        const snacks = restaurantItems.filter(item => item.shopType === '간식');
+        snacks.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            opt.textContent = item.shopName;
+            selectEl.appendChild(opt);
+        });
+
+        // 선택 이벤트: 선택 즉시 리스트에 추가
+        selectEl.onchange = async function() {
+            if(!this.value) return;
+            const newIndex = savedList.length;
+            await set(ref(db, `planner_inputs/${slot}_item_${newIndex}`), this.value);
+            this.value = ""; // 초기화
+        };
+        parentContainer.appendChild(selectEl);
+
+        // 3. 리스트 영역 (한 줄에 표시)
+        savedList.forEach((itemData, i) => {
+            const itemObj = restaurantItems.find(r => r.id === itemData.id);
+            if (!itemObj) return;
+
+            const row = document.createElement('div');
+            row.style.display = "flex";
+            row.style.alignItems = "center";
+            row.style.gap = "8px";
+            row.style.padding = "5px 0";
+            row.style.borderBottom = "1px solid #eee";
+            row.style.fontSize = "0.85rem";
+
+            row.innerHTML = `
+                <div style="flex:1;"><strong>${itemObj.shopName}</strong> <span style="color:#777;">${itemObj.shopMemo || ''}</span></div>
+                <a href="${itemObj.shopLink}" target="_blank" style="text-decoration:none;">🗺️</a>
+                <button style="border:none; background:#feb2b2; color:#c53030; border-radius:50%; width:20px; height:20px; cursor:pointer;" onclick="deleteSnack('${slot}', ${i})">X</button>
+            `;
+            parentContainer.appendChild(row);
+        });
+    });
+}
+
+// 4. 리스트 삭제 로직 (데이터 재정렬)
+window.deleteSnack = async function(slot, deleteIdx) {
+    // 해당 인덱스 삭제 후 배열 재구성
+    let list = [];
+    let idx = 0;
+    while(currentDBInputs[`${slot}_item_${idx}`]) {
+        if(idx !== deleteIdx) list.push(currentDBInputs[`${slot}_item_${idx}`]);
+        await set(ref(db, `planner_inputs/${slot}_item_${idx}`), null); // 기존 데이터 비우기
+        idx++;
+    }
+    // 재정렬된 리스트 다시 저장
+    for(let i=0; i<list.length; i++) {
+        await set(ref(db, `planner_inputs/${slot}_item_${i}`), list[i]);
+    }
+};
+
+
+        // --- 준비물 리스트 로직 ---
+        function renderPackList() {
+            const container = document.getElementById('custom-pack-container');
+            container.innerHTML = '';
+            if(packItems.length === 0) return;
+            packItems.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'checklist-item';
+                itemDiv.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                        <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="togglePackCheck('${item.id}', this.checked)">
+                        <input type="text" style="font-size:0.95rem; border:none; background:transparent; width:85%;" value="${item.text || ''}" onchange="updatePackText('${item.id}', this.value)">
+                    </div>
+                    <button class="mini-del-btn" onclick="deletePackItem('${item.id}')">❌</button>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        window.togglePackCheck = async function(id, isChecked) {
+            await set(ref(db, `planner_packs/${id}/checked`), isChecked);
+        };
+        window.updatePackText = async function(id, val) {
+            await set(ref(db, `planner_packs/${id}/text`), val);
+        };
+        window.addNewPackItem = async function() {
+            await set(push(ref(db, 'planner_packs')), { text: '', checked: false });
+        };
+        window.deletePackItem = async function(id) {
+            await remove(ref(db, `planner_packs/${id}`));
+        };
+
+        window.onload = function() {
+            initRealtimeEngine();
+        };
+    </script>
+
+    <script>
+        function openTab(tabId) {
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+    </script>
+</body>
+</html>
