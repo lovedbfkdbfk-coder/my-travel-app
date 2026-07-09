@@ -114,20 +114,20 @@
     <div id="day1" class="content-section active">
         <div class="card">
             <div class="card-title">
-                <span>▶ 1일차: 입국 & 시내 산책</span>
+                <span contenteditable="true" id="day1_title">▶ 1일차: 입국 & 시내 산책</span>
                 <span class="day-budget-badge">1일차 지출: <span id="budget_day1">0</span></span>
             </div>
             <div class="timeline">
                 <div class="timeline-item">
                     <input type="text" class="time-input" id="t1_1" value="14:05" onchange="saveInputData('t1_1')">
-                    <div class="spot-name">후쿠오카 공항 입국 & 수하물 수령</div>
-                    <div class="route-box"><strong>🚌 공항 이동 상세 안내:</strong><br>• 국제선 터미널 전면 셔틀버스 정류장에서 <b>무료 셔틀버스</b> 탑승 ➔ 국내선 터미널(지하철역)로 이동 (약 10~15분 소요).</div>
+                    <div class="spot-name" contenteditable="true" id="name1_1">후쿠오카 공항 입국 & 수하물 수령</div>
+                    <div class="route-box" contenteditable="true" id="route1_1"><strong>🚌 공항 이동 상세 안내:</strong><br>• 국제선 터미널 전면 셔틀버스 정류장에서 <b>무료 셔틀버스</b> 탑승 ➔ 국내선 터미널(지하철역)로 이동 (약 10~15분 소요).</div>
                     <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_1" placeholder="0" onchange="saveInputData('b_1_1');calculateLiveBudgets();"></div>
                 </div>
                 <div class="timeline-item">
                     <input type="text" class="time-input" id="t1_2" value="14:50" onchange="saveInputData('t1_2')">
-                    <div class="spot-name">지하철 공항선 탑승 ➔ 하카타역 이동</div>
-                    <div class="route-box"><strong>🚇 지하철 상세 안내:</strong><br>• 국내선 터미널 지하 <b>후쿠오카공항역</b> ➔ <b>하카타역</b> 이동 (2정거장, 약 5분 소요).</div>
+                    <div class="spot-name" contenteditable="true" id="name1_2">지하철 공항선 탑승 ➔ 하카타역 이동</div>
+                    <div class="route-box" contenteditable="true" id="route1_2"><strong>🚇 지하철 상세 안내:</strong><br>• 국내선 터미널 지하 <b>후쿠오카공항역</b> ➔ <b>하카타역</b> 이동 (2정거장, 약 5분 소요).</div>
                     <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_2" placeholder="0" onchange="saveInputData('b_1_2');calculateLiveBudgets();"></div>
                 </div>
                 <div class="timeline-item">
@@ -504,28 +504,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 📡 파이어베이스 실시간 모듈 스크립트 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBS7GSu0TjyAXm9efKFgUkL-Jjr5nw_7NM",
-            authDomain: "overtime-c90a1.firebaseapp.com",
-            databaseURL: "https://overtime-c90a1-default-rtdb.firebaseio.com",
-            projectId: "overtime-c90a1",
-            storageBucket: "overtime-c90a1.firebasestorage.app",
-            messagingSenderId: "237172347836",
-            appId: "1:237172347836:web:3c47941cd94d24744f51b9"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        let restaurantItems = [];
-        let packItems = [];
-        let currentDBInputs = {}; // 최신 DB 입력 상태 백업
         
         // 고정형 식사 슬롯 리스트
         const mealSlots = [
@@ -902,6 +880,31 @@ window.deleteSnack = async function(slot, deleteIdx) {
             localStorage.setItem(el.id, el.innerText);
         });
     });
+        // 1. 데이터를 저장하는 함수
+function saveInputData(id) {
+    const element = document.getElementById(id);
+    const value = element.tagName === 'INPUT' ? element.value : element.innerText;
+    localStorage.setItem(id, value);
+}
+
+// 2. 페이지 열릴 때 저장된 데이터 불러오기
+window.addEventListener('DOMContentLoaded', () => {
+    const editableElements = document.querySelectorAll('[contenteditable="true"], .time-input, .spot-budget-input');
+    
+    editableElements.forEach(el => {
+        const savedValue = localStorage.getItem(el.id);
+        if (savedValue) {
+            if (el.tagName === 'INPUT') el.value = savedValue;
+            else el.innerText = savedValue;
+        }
+        
+        // 입력이 일어날 때마다 실시간 저장 감지 추가
+        el.addEventListener('input', () => saveInputData(el.id));
+    });
+    
+    // 경비 합계 재계산
+    if (typeof calculateLiveBudgets === 'function') calculateLiveBudgets();
+});
 </script>
 </body>
 </html>
