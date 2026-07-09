@@ -102,20 +102,14 @@
     <div class="sync-status" id="sync-indicator">🔄 수정사항은 자동으로 저장됩니다.</div>
 </header>
 
-<div class="nav-tabs" id="tab-container">
-    <button class="tab-btn active" onclick="openTab('day1')">1일차</button>
-</div>
-
-<div style="display:flex; gap:10px; padding:0 15px 15px 15px;">
-    <button onclick="addNewDay()" style="flex:1; padding:10px; background-color:#38A169; color:white; border:none; border-radius:5px; cursor:pointer;">+ 일차 추가</button>
-    <button onclick="removeLastDay()" style="flex:1; padding:10px; background-color:#E53E3E; color:white; border:none; border-radius:5px; cursor:pointer;">- 마지막 일차 삭제</button>
-</div>
-
 <div id="days-wrapper">
     <div id="day1" class="content-section active">
         <div class="card">
-            <div class="card-title"><span>▶ 1일차</span></div>
-            <div class="timeline">내용을 입력하세요.</div>
+            <h3>▶ 1일차 일정</h3>
+            <div class="input-group">
+                <input type="text" id="day1_input" placeholder="장소 입력">
+                <button onclick="searchPlace('day1_input')">검색</button>
+            </div>
         </div>
     </div>
 </div>
