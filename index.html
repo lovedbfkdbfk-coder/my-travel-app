@@ -85,18 +85,19 @@
     <div id="loading" class="loading-mask">데이터 연동 엔진 시동 중...</div>
 
     <header>
-        <h1>후쿠오카 가족 여행 ✈️</h1>
-        <p>2026.07.22 ~ 07.25 (3박 4일)</p>
-        <div class="flight-info">
-            <div><span class="flight-label">🛫 출국편:</span> <span>부산(13:05) → 후쿠오카(14:05)</span></div>
-            <div><span class="flight-label">🛬 귀국편:</span> <span>후쿠오카(14:55) → 부산(15:55)</span></div>
-        </div>
-        <br>
-        <div class="family-badge">🏠 숙소: レジ던스 호텔 하카타에키미나미</div>
-        
-        <div class="total-budget-header">
-            💵 여행 총 경비 합계: <span id="total-budget-sum">0</span>원 (또는 ￥)
-        </div>
+        <h1 contenteditable="true" id="trip-title">후쿠오카 가족 여행 ✈️</h1>
+    <p contenteditable="true" id="trip-date">2026.07.22 ~ 07.25 (3박 4일)</p>
+    
+    <div class="flight-info">
+        <div contenteditable="true" id="flight-out">🛫 출국편: 부산(13:05) → 후쿠오카(14:05)</div>
+        <div contenteditable="true" id="flight-in">🛬 귀국편: 후쿠오카(14:55) → 부산(15:55)</div>
+    </div>
+    
+    <div contenteditable="true" class="family-badge" id="hotel-info">🏠 숙소: 레지던스 호텔 하카타에키미나미</div>
+    
+    <div class="total-budget-header">
+        💵 여행 총 경비 합계: <span id="total-budget-sum" contenteditable="true">0</span>원
+    </div>
         <div class="sync-status" id="sync-indicator">🔄 구분형 및 지출 실시간 연동엔진 작동 중</div>
     </header>
 
