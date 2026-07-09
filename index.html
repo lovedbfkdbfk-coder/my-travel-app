@@ -563,61 +563,67 @@ inputs.forEach(id => {
     });
 });
 </script>
-    <script>
-// 탭 전환 함수
-function openTab(tabId) {
-    document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    
-    // 버튼 활성화 처리
-    const buttons = document.querySelectorAll('.tab-btn');
-    buttons.forEach(btn => {
-        if(btn.innerText === tabId.replace('day', '') + '일차') btn.classList.add('active');
-    });
-}
-
-// 일차 추가 함수
-function addNewDay() {
-    const tabContainer = document.getElementById('tab-container');
-    const daysWrapper = document.getElementById('days-wrapper');
-    const newDayNum = tabContainer.children.length + 1;
-    const tabId = 'day' + newDayNum;
-
-    // 탭 버튼 생성
-    const newBtn = document.createElement('button');
-    newBtn.className = 'tab-btn';
-    newBtn.innerText = newDayNum + '일차';
-    newBtn.onclick = () => openTab(tabId);
-    tabContainer.appendChild(newBtn);
-
-    // 내용 영역 생성
-    const newDayDiv = document.createElement('div');
-    newDayDiv.id = tabId;
-    newDayDiv.className = 'content-section';
-    newDayDiv.innerHTML = `
-        <div class="card">
-            <div class="card-title"><span>▶ ${newDayNum}일차 일정</span></div>
-            <div class="timeline">내용을 입력하세요.</div>
-        </div>
-    `;
-    daysWrapper.appendChild(newDayDiv);
-}
-
-// 마지막 일차 삭제 함수
-function removeLastDay() {
-    const tabContainer = document.getElementById('tab-container');
-    const daysWrapper = document.getElementById('days-wrapper');
-    
-    if (tabContainer.children.length > 1) {
-        tabContainer.removeChild(tabContainer.lastChild);
-        daysWrapper.removeChild(daysWrapper.lastChild);
-        // 마지막 일차 삭제 후 1일차로 자동 전환
-        openTab('day1');
-    } else {
-        alert("최소 1일차는 있어야 합니다!");
+<script>
+    function openTab(tabId) {
+        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
     }
-}
+
+    function addNewDay() {
+        const num = document.getElementById('tab-container').children.length + 1;
+        const tabId = 'day' + num;
+        
+        // 탭 버튼
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn';
+        btn.innerText = num + '일차';
+        btn.onclick = function() { openTab(tabId); };
+        document.getElementById('tab-container').appendChild(btn);
+        
+        // 본문 영역 (1일차와 똑같은 구조!)
+        const div = document.createElement('div');
+        div.id = tabId;
+        div.className = 'content-section';
+        div.innerHTML = `
+            <div class="card">
+                <h3>▶ ${num}일차 일정</h3>
+                <div class="input-group">
+                    <input type="text" id="${tabId}_input" placeholder="장소 입력">
+                    <button onclick="searchPlace('${tabId}_input')">검색</button>
+                </div>
+            </div>`;
+        document.getElementById('days-wrapper').appendChild(div);
+        setupAutoSave(); // 새로 생긴 칸도 저장되게
+    }
+
+    function searchPlace(inputId) {
+        const val = document.getElementById(inputId).value;
+        if(val) {
+            window.open('https://www.google.com/maps/search/' + encodeURIComponent(val), '_blank');
+        } else {
+            alert("장소를 입력하세요!");
+        }
+    }
+
+    function removeLastDay() {
+        const tabs = document.getElementById('tab-container');
+        const wraps = document.getElementById('days-wrapper');
+        if(tabs.children.length > 1) {
+            tabs.removeChild(tabs.lastChild);
+            wraps.removeChild(wraps.lastChild);
+            openTab('day1');
+        }
+    }
+
+    function setupAutoSave() {
+        document.querySelectorAll('input').forEach(input => {
+            input.value = localStorage.getItem(input.id) || '';
+            input.addEventListener('input', (e) => localStorage.setItem(e.target.id, e.target.value));
+        });
+    }
+    setupAutoSave();
 </script>
 </body>
 </html>
