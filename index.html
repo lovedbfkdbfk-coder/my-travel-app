@@ -502,7 +502,15 @@
             </div>
         </div>
     </div>
-    <script>
+    <script type="module">
+        import {
+           db,
+           ref,
+           onValue,
+           set,
+           push,
+           remove
+        } from "./firebase.js";
         
         // 고정형 식사 슬롯 리스트
         const mealSlots = [
@@ -511,6 +519,9 @@
         ];
 
         // 동적 확장형 간식 그룹 타겟 리스트
+        let restaurantItems = [];
+let packItems = [];
+let currentDBInputs = {};
         const snackSlots = [
             'd1_snack1', 'd1_snack2', 'd2_snack1', 'd2_snack2', 'd2_snack3',
             'd3_snack1', 'd3_snack2', 'd3_snack3', 't4_snack1', 'd4_snack1', 'd4_snack2'
@@ -906,6 +917,5 @@ window.addEventListener('DOMContentLoaded', () => {
     if (typeof calculateLiveBudgets === 'function') calculateLiveBudgets();
 });
 </script>
-<script type="module" src="firebase.js"></script>
 </body>
 </html>

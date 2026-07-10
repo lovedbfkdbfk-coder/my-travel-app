@@ -1,6 +1,13 @@
 // Firebase SDK 불러오기
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  push,
+  remove
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
 // Firebase 설정
 const firebaseConfig = {
@@ -15,9 +22,16 @@ const firebaseConfig = {
 
 // Firebase 시작
 const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
+const db = getDatabase(app);
 
 // 다른 파일에서도 사용할 수 있도록 내보내기
-export { database };
+export {
+  db,
+  ref,
+  onValue,
+  set,
+  push,
+  remove
+};
 
 console.log("✅ Firebase 연결 성공!");
