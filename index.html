@@ -517,7 +517,8 @@
         ];
 
         function initRealtimeEngine() {
-            document.getElementById('loading').style.display = 'flex';
+            const loading = document.getElementById('loading');
+            if (loading) loading.style.display = 'flex';
 
             // 1. 맛집/간식 통합 데이터 리스너
             onValue(ref(db, 'gourmet_guide'), (snapshot) => {
@@ -532,7 +533,7 @@
                 renderRestaurantsList();
                 updateStaticMealDropdowns();
                 renderAllDynamicSnackContainers();
-                document.getElementById('loading').style.display = 'none';
+                if (loading) loading.style.display = 'none';
             });
 
             // 2. 입력 데이터 바인딩 리스너
@@ -905,5 +906,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (typeof calculateLiveBudgets === 'function') calculateLiveBudgets();
 });
 </script>
+<script type="module" src="firebase.js"></script>
 </body>
 </html>
