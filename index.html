@@ -565,8 +565,13 @@ let currentDBInputs = {};
                 Object.keys(data).forEach(id => {
                     if (!id.startsWith('selected_') && !id.startsWith('selectedType_')) {
                         const el = document.getElementById(id);
-                        if (el && document.activeElement !== el) el.value = data[id];
-                    }
+                        if (el && document.activeElement !== el) {
+    if (el.isContentEditable) {
+        el.innerText = data[id];
+    } else {
+        el.value = data[id];
+    }
+}
                 });
 
                 // 식사 선택 매칭 및 지도 버튼 업데이트
@@ -592,9 +597,14 @@ let currentDBInputs = {};
         }
 
         window.saveInputData = async function(id) {
-            const val = document.getElementById(id).value;
-            await set(ref(db, `planner_inputs/${id}`), val);
-        };
+    const element = document.getElementById(id);
+
+    const val = element.isContentEditable
+        ? element.innerText
+        : element.value;
+
+    await set(ref(db, `planner_inputs/${id}`), val);
+};
 
         window.calculateLiveBudgets = function() {
             let total = 0;
@@ -873,49 +883,6 @@ window.deleteSnack = async function(slot, deleteIdx) {
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
     </script>
-    <script>
-    // 1. 저장할 대상들을 모두 선택합니다.
-    const editableElements = document.querySelectorAll('[contenteditable="true"]');
-
-    // 2. 페이지가 로드될 때 저장된 값을 불러옵니다.
-    window.addEventListener('DOMContentLoaded', () => {
-        editableElements.forEach(el => {
-            const savedValue = localStorage.getItem(el.id);
-            if (savedValue) el.innerText = savedValue;
-        });
-    });
-
-    // 3. 수정될 때마다 실시간으로 저장합니다.
-    editableElements.forEach(el => {
-        el.addEventListener('input', () => {
-            localStorage.setItem(el.id, el.innerText);
-        });
-    });
-        // 1. 데이터를 저장하는 함수
-function saveInputData(id) {
-    const element = document.getElementById(id);
-    const value = element.tagName === 'INPUT' ? element.value : element.innerText;
-    localStorage.setItem(id, value);
-}
-
-// 2. 페이지 열릴 때 저장된 데이터 불러오기
-window.addEventListener('DOMContentLoaded', () => {
-    const editableElements = document.querySelectorAll('[contenteditable="true"], .time-input, .spot-budget-input');
     
-    editableElements.forEach(el => {
-        const savedValue = localStorage.getItem(el.id);
-        if (savedValue) {
-            if (el.tagName === 'INPUT') el.value = savedValue;
-            else el.innerText = savedValue;
-        }
-        
-        // 입력이 일어날 때마다 실시간 저장 감지 추가
-        el.addEventListener('input', () => saveInputData(el.id));
-    });
-    
-    // 경비 합계 재계산
-    if (typeof calculateLiveBudgets === 'function') calculateLiveBudgets();
-});
-</script>
 </body>
 </html>
