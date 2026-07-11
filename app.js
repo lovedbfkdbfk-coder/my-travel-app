@@ -18,10 +18,10 @@ let currentDays = {};
 let activeDayId = null;
 let gourmetItems = [];
 
-console.log("✅ Travel Planner V2 동적 일차 시스템 시작");
+console.log("✅ Travel Planner V2 통합 시스템 시작");
 
 // =========================================
-// 공용 유틸리티
+// 공용 함수
 // =========================================
 
 function escapeHtml(value = "") {
@@ -33,8 +33,7 @@ function escapeHtml(value = "") {
     .replaceAll("'", "&#039;");
 }
 
-// 시간 입력값을 HH:MM 형식으로 변환
-// 930  → 09:30
+// 930 → 09:30
 // 1430 → 14:30
 // 9:30 → 09:30
 // 9.30 → 09:30
@@ -83,11 +82,13 @@ function normalizeTimeInput(value) {
     return null;
   }
 
-  const normalized = text.replace(".", ":");
+  const normalizedText =
+    text.replace(".", ":");
 
-  const match = normalized.match(
-    /^(\d{1,2}):(\d{1,2})$/
-  );
+  const match =
+    normalizedText.match(
+      /^(\d{1,2}):(\d{1,2})$/
+    );
 
   if (!match) {
     return null;
@@ -111,34 +112,32 @@ function normalizeTimeInput(value) {
   );
 }
 
-// 시간을 정렬용 숫자로 변환
 function timeToMinutes(timeValue) {
-  const normalized =
+  const normalizedTime =
     normalizeTimeInput(timeValue);
 
-  // 시간이 없거나 잘못된 형식이면 아래쪽으로 이동
-  if (!normalized) {
+  if (!normalizedTime) {
     return Number.MAX_SAFE_INTEGER;
   }
 
   const [hour, minute] =
-    normalized.split(":").map(Number);
+    normalizedTime
+      .split(":")
+      .map(Number);
 
   return hour * 60 + minute;
 }
 
-// 일정 시간순 정렬
 function sortItemsByTime(items) {
   return [...items].sort((a, b) => {
-    const difference =
+    const timeDifference =
       timeToMinutes(a.time) -
       timeToMinutes(b.time);
 
-    if (difference !== 0) {
-      return difference;
+    if (timeDifference !== 0) {
+      return timeDifference;
     }
 
-    // 시간이 같으면 기존 생성 순서 유지
     return (
       (Number(a.order) || 0) -
       (Number(b.order) || 0)
@@ -146,7 +145,6 @@ function sortItemsByTime(items) {
   });
 }
 
-// 일차 순서 정렬
 function getSortedDays() {
   return Object.entries(currentDays)
     .map(([id, day]) => ({
@@ -160,28 +158,55 @@ function getSortedDays() {
     );
 }
 
+// 기존 selectedItems 형식과 새 형식 모두 처리
+function getSelectedPlaceId(selection) {
+  if (typeof selection === "string") {
+    return selection;
+  }
+
+  if (
+    selection &&
+    typeof selection === "object"
+  ) {
+    return selection.placeId || "";
+  }
+
+  return "";
+}
+
 // =========================================
-// 여행 기본정보 출력
+// 여행 기본정보
 // =========================================
 
 function renderTripInfo(info = {}) {
   const title =
-    document.getElementById("v2-trip-title");
+    document.getElementById(
+      "v2-trip-title"
+    );
 
   const date =
-    document.getElementById("v2-trip-date");
+    document.getElementById(
+      "v2-trip-date"
+    );
 
   const flightOut =
-    document.getElementById("v2-flight-out");
+    document.getElementById(
+      "v2-flight-out"
+    );
 
   const flightIn =
-    document.getElementById("v2-flight-in");
+    document.getElementById(
+      "v2-flight-in"
+    );
 
   const hotel =
-    document.getElementById("v2-hotel-info");
+    document.getElementById(
+      "v2-hotel-info"
+    );
 
   if (title) {
-    title.textContent = info.title || "";
+    title.textContent =
+      info.title || "";
   }
 
   if (date) {
@@ -235,10 +260,14 @@ const tripInfoFieldMap = {
   "v2-hotel-info": "hotel"
 };
 
-Object.entries(tripInfoFieldMap).forEach(
+Object.entries(
+  tripInfoFieldMap
+).forEach(
   ([elementId, firebaseField]) => {
     const element =
-      document.getElementById(elementId);
+      document.getElementById(
+        elementId
+      );
 
     if (!element) {
       return;
@@ -271,30 +300,43 @@ Object.entries(tripInfoFieldMap).forEach(
 );
 
 // =========================================
-// 맛집·간식 공용 데이터 읽기
+// 맛집·간식 공용 데이터
 // =========================================
 
 onValue(
   ref(db, "gourmet_guide"),
   (snapshot) => {
-    const data = snapshot.val() || {};
+    const data =
+      snapshot.val() || {};
 
     gourmetItems =
-      Object.entries(data).map(
-        ([id, value]) => ({
+      Object.entries(data)
+        .map(([id, value]) => ({
           id,
           ...value
-        })
-      );
+        }))
+        .sort((a, b) => {
+          const typeCompare =
+            (
+              a.shopType || "식사"
+            ).localeCompare(
+              b.shopType || "식사",
+              "ko"
+            );
 
-    gourmetItems.sort((a, b) =>
-      (a.shopName || "").localeCompare(
-        b.shopName || "",
-        "ko"
-      )
-    );
+          if (typeCompare !== 0) {
+            return typeCompare;
+          }
 
-    refreshAllPlaceDropdowns();
+          return (
+            a.shopName || ""
+          ).localeCompare(
+            b.shopName || "",
+            "ko"
+          );
+        });
+
+    refreshAllGourmetDropdowns();
   }
 );
 
@@ -305,9 +347,11 @@ onValue(
 onValue(
   ref(db, `${tripBasePath}/days`),
   (snapshot) => {
-    currentDays = snapshot.val() || {};
+    currentDays =
+      snapshot.val() || {};
 
-    const sortedDays = getSortedDays();
+    const sortedDays =
+      getSortedDays();
 
     if (sortedDays.length === 0) {
       activeDayId = null;
@@ -320,11 +364,13 @@ onValue(
 
     const activeDayStillExists =
       sortedDays.some(
-        (day) => day.id === activeDayId
+        (day) =>
+          day.id === activeDayId
       );
 
     if (!activeDayStillExists) {
-      activeDayId = sortedDays[0].id;
+      activeDayId =
+        sortedDays[0].id;
     }
 
     renderDayTabs(sortedDays);
@@ -370,7 +416,9 @@ function renderDayTabs(days) {
       .join("");
 
   tabContainer
-    .querySelectorAll(".day-tab-btn")
+    .querySelectorAll(
+      ".day-tab-btn"
+    )
     .forEach((button) => {
       button.addEventListener(
         "click",
@@ -384,28 +432,38 @@ function renderDayTabs(days) {
 }
 
 // =========================================
-// 여행 일차 탭 열기
+// 일차 탭 열기
 // =========================================
 
 function openDayTab(dayId) {
   activeDayId = dayId;
 
   document
-    .querySelectorAll(".content-section")
+    .querySelectorAll(
+      ".content-section"
+    )
     .forEach((section) => {
-      section.classList.remove("active");
+      section.classList.remove(
+        "active"
+      );
     });
 
   document
-    .querySelectorAll(".v2-day-section")
+    .querySelectorAll(
+      ".v2-day-section"
+    )
     .forEach((section) => {
-      section.classList.remove("active");
+      section.classList.remove(
+        "active"
+      );
     });
 
   document
     .querySelectorAll(".tab-btn")
     .forEach((button) => {
-      button.classList.remove("active");
+      button.classList.remove(
+        "active"
+      );
     });
 
   const selectedSection =
@@ -441,7 +499,7 @@ function openDayTab(dayId) {
 }
 
 // =========================================
-// 맛집·준비물 고정 탭 열기
+// 맛집·준비물 고정 탭
 // =========================================
 
 function openStaticTab(
@@ -449,15 +507,23 @@ function openStaticTab(
   button
 ) {
   document
-    .querySelectorAll(".content-section")
+    .querySelectorAll(
+      ".content-section"
+    )
     .forEach((section) => {
-      section.classList.remove("active");
+      section.classList.remove(
+        "active"
+      );
     });
 
   document
-    .querySelectorAll(".v2-day-section")
+    .querySelectorAll(
+      ".v2-day-section"
+    )
     .forEach((section) => {
-      section.classList.remove("active");
+      section.classList.remove(
+        "active"
+      );
     });
 
   document
@@ -469,14 +535,20 @@ function openStaticTab(
     });
 
   const target =
-    document.getElementById(tabId);
+    document.getElementById(
+      tabId
+    );
 
   if (target) {
-    target.classList.add("active");
+    target.classList.add(
+      "active"
+    );
   }
 
   if (button) {
-    button.classList.add("active");
+    button.classList.add(
+      "active"
+    );
   }
 
   window.scrollTo({
@@ -486,7 +558,9 @@ function openStaticTab(
 }
 
 document
-  .querySelectorAll("[data-static-tab]")
+  .querySelectorAll(
+    "[data-static-tab]"
+  )
   .forEach((button) => {
     button.addEventListener(
       "click",
@@ -500,7 +574,7 @@ document
   });
 
 // =========================================
-// 모든 일차 본문 생성
+// 모든 일차 본문 출력
 // =========================================
 
 function renderDays(days) {
@@ -525,11 +599,11 @@ function renderDays(days) {
     calculateDayBudget(day.id);
   });
 
-  refreshAllPlaceDropdowns();
+  refreshAllGourmetDropdowns();
 }
 
 // =========================================
-// 일차 본문 HTML 생성
+// 일차 본문 HTML
 // =========================================
 
 function createDaySectionHtml(day) {
@@ -543,7 +617,6 @@ function createDaySectionHtml(day) {
       ? "active"
       : "";
 
-  // 시간을 기준으로 자동 정렬
   const items =
     sortItemsByTime(
       Object.entries(
@@ -650,7 +723,253 @@ function createDaySectionHtml(day) {
 }
 
 // =========================================
-// 일정 항목 HTML 생성
+// 일반 일정 HTML
+// =========================================
+
+function createPlaceItemHtml(
+  itemId,
+  item,
+  deleteButton
+) {
+  return `
+    <div
+      class="timeline-item"
+      data-item-id="${escapeHtml(itemId)}"
+    >
+
+      ${deleteButton}
+
+      <input
+        type="text"
+        class="time-input"
+        value="${escapeHtml(item.time || "")}"
+        placeholder="09:00"
+      >
+
+      <div class="v2-place-title-row">
+
+        <div
+          class="spot-name"
+          contenteditable="true"
+        >
+          ${item.name || ""}
+        </div>
+
+        <button
+          type="button"
+          class="v2-google-map-search-btn"
+          title="이 장소를 구글지도에서 검색"
+        >
+          🗺️ 지도검색
+        </button>
+
+      </div>
+
+      <div
+        class="route-box"
+        contenteditable="true"
+      >
+        ${item.descriptionHtml || ""}
+      </div>
+
+      <div class="spot-budget-container">
+
+        💰 경비:
+
+        <input
+          type="number"
+          class="spot-budget-input v2-budget-input"
+          value="${Number(item.budget) || 0}"
+        >
+
+      </div>
+
+    </div>
+  `;
+}
+
+// =========================================
+// 식사·간식 선택행 HTML
+// =========================================
+
+function createGourmetSelectionRows(
+  item
+) {
+  const rows = [];
+
+  // 기존 단일 선택 데이터 호환
+  if (item.selectedPlaceId) {
+    rows.push({
+      selectionId: "__legacy__",
+      placeId: item.selectedPlaceId,
+      isLegacy: true
+    });
+  }
+
+  // 동적 다중 선택 데이터
+  Object.entries(
+    item.selectedItems || {}
+  ).forEach(
+    ([selectionId, selection]) => {
+      rows.push({
+        selectionId,
+        placeId:
+          getSelectedPlaceId(
+            selection
+          ),
+        isLegacy: false
+      });
+    }
+  );
+
+  if (rows.length === 0) {
+    return `
+      <div class="v2-empty-gourmet-message">
+        아직 선택된 장소가 없습니다.
+      </div>
+    `;
+  }
+
+  return rows
+    .map((row) => `
+      <div
+        class="v2-gourmet-selection-row"
+        data-selection-id="${escapeHtml(
+          row.selectionId
+        )}"
+        data-is-legacy="${
+          row.isLegacy
+            ? "true"
+            : "false"
+        }"
+      >
+
+        <select
+          class="rest-select v2-dynamic-gourmet-select"
+          data-selected-place-id="${escapeHtml(
+            row.placeId
+          )}"
+        >
+          <option value="">
+            -- 장소 선택 --
+          </option>
+        </select>
+
+        <button
+          type="button"
+          class="mini-del-btn v2-delete-gourmet-selection-btn"
+          title="이 선택 삭제"
+        >
+          ✕
+        </button>
+
+      </div>
+    `)
+    .join("");
+}
+
+// =========================================
+// 식사·간식 HTML
+// =========================================
+
+function createGourmetItemHtml(
+  itemId,
+  item,
+  deleteButton
+) {
+  const isSnack =
+    item.type === "snack";
+
+  const gourmetType =
+    isSnack
+      ? "간식"
+      : "식사";
+
+  const defaultName =
+    isSnack
+      ? "🍰 간식"
+      : "🍽️ 식사";
+
+  const selectionRowsHtml =
+    createGourmetSelectionRows(
+      item
+    );
+
+  return `
+    <div
+      class="timeline-item"
+      data-item-id="${escapeHtml(itemId)}"
+      data-item-type="${escapeHtml(item.type)}"
+      data-gourmet-type="${gourmetType}"
+    >
+
+      ${deleteButton}
+
+      <input
+        type="text"
+        class="time-input"
+        value="${escapeHtml(item.time || "")}"
+        placeholder="09:00"
+      >
+
+      <div
+        class="spot-name v2-selectable-item-name"
+        contenteditable="true"
+      >
+        ${item.name || defaultName}
+      </div>
+
+      <div
+        class="restaurant-box ${
+          isSnack
+            ? "snack-box"
+            : ""
+        }"
+      >
+
+        <div class="v2-gourmet-type-label">
+          ${
+            isSnack
+              ? "🍰 간식 장소"
+              : "🍽️ 식당"
+          }
+        </div>
+
+        <div class="v2-dynamic-gourmet-list">
+          ${selectionRowsHtml}
+        </div>
+
+        <button
+          type="button"
+          class="v2-add-gourmet-selection-btn"
+        >
+          ➕ ${
+            isSnack
+              ? "간식 장소 추가"
+              : "식당 추가"
+          }
+        </button>
+
+      </div>
+
+      <div class="spot-budget-container">
+
+        💰 경비:
+
+        <input
+          type="number"
+          class="spot-budget-input v2-budget-input"
+          value="${Number(item.budget) || 0}"
+        >
+
+      </div>
+
+    </div>
+  `;
+}
+
+// =========================================
+// 일정 항목 HTML 분기
 // =========================================
 
 function createItemHtml(
@@ -669,180 +988,30 @@ function createItemHtml(
     </button>
   `;
 
-  // 일반 일정
   if (item.type === "place") {
-    return `
-      <div
-        class="timeline-item"
-        data-item-id="${escapeHtml(itemId)}"
-      >
-
-        ${deleteButton}
-
-        <input
-          type="text"
-          class="time-input"
-          value="${escapeHtml(item.time || "")}"
-          placeholder="09:00"
-        >
-
-        <div class="v2-place-title-row">
-
-          <div
-            class="spot-name"
-            contenteditable="true"
-          >
-            ${item.name || ""}
-          </div>
-
-          <button
-            type="button"
-            class="v2-google-map-search-btn"
-            title="이 장소를 구글지도에서 검색"
-          >
-            🗺️ 지도검색
-          </button>
-
-        </div>
-
-        <div
-          class="route-box"
-          contenteditable="true"
-        >
-          ${item.descriptionHtml || ""}
-        </div>
-
-        <div class="spot-budget-container">
-
-          💰 경비:
-
-          <input
-            type="number"
-            class="spot-budget-input v2-budget-input"
-            value="${Number(item.budget) || 0}"
-          >
-
-        </div>
-
-      </div>
-    `;
+    return createPlaceItemHtml(
+      itemId,
+      item,
+      deleteButton
+    );
   }
 
-  // 식사 또는 간식
   if (
     item.type === "meal" ||
     item.type === "snack"
   ) {
-    const defaultName =
-      item.type === "meal"
-        ? "🍽️ 식사"
-        : "🍰 간식";
-
-    const defaultType =
-      item.type === "snack"
-        ? "간식"
-        : "식사";
-
-    const selectedType =
-      item.selectedType ||
-      defaultType;
-
-    return `
-      <div
-        class="timeline-item"
-        data-item-id="${escapeHtml(itemId)}"
-      >
-
-        ${deleteButton}
-
-        <input
-          type="text"
-          class="time-input"
-          value="${escapeHtml(item.time || "")}"
-          placeholder="09:00"
-        >
-
-        <div
-          class="spot-name v2-selectable-item-name"
-          contenteditable="true"
-        >
-          ${item.name || defaultName}
-        </div>
-
-        <div
-          class="restaurant-box ${
-            item.type === "snack"
-              ? "snack-box"
-              : ""
-          }"
-        >
-
-          <div class="rest-grid">
-
-            <select
-              class="type-select v2-item-gourmet-type"
-            >
-
-              <option
-                value="식사"
-                ${
-                  selectedType === "식사"
-                    ? "selected"
-                    : ""
-                }
-              >
-                식사
-              </option>
-
-              <option
-                value="간식"
-                ${
-                  selectedType === "간식"
-                    ? "selected"
-                    : ""
-                }
-              >
-                간식
-              </option>
-
-            </select>
-
-            <select
-              class="rest-select v2-item-place"
-              data-selected-place-id="${escapeHtml(
-                item.selectedPlaceId || ""
-              )}"
-            >
-              <option value="">
-                -- 장소 선택 --
-              </option>
-            </select>
-
-          </div>
-
-        </div>
-
-        <div class="spot-budget-container">
-
-          💰 경비:
-
-          <input
-            type="number"
-            class="spot-budget-input v2-budget-input"
-            value="${Number(item.budget) || 0}"
-          >
-
-        </div>
-
-      </div>
-    `;
+    return createGourmetItemHtml(
+      itemId,
+      item,
+      deleteButton
+    );
   }
 
   return "";
 }
 
 // =========================================
-// 일차 내부 기능 연결
+// 일차별 이벤트 연결
 // =========================================
 
 function bindDayEvents(dayId) {
@@ -857,7 +1026,6 @@ function bindDayEvents(dayId) {
     return;
   }
 
-  // 일차 제목 저장
   const titleElement =
     section.querySelector(
       ".v2-day-title"
@@ -875,10 +1043,6 @@ function bindDayEvents(dayId) {
             ),
             titleElement.innerText.trim()
           );
-
-          console.log(
-            `✅ ${dayId} 제목 저장 완료`
-          );
         } catch (error) {
           console.error(
             "❌ 일차 제목 저장 실패",
@@ -889,9 +1053,10 @@ function bindDayEvents(dayId) {
     );
   }
 
-  // 일정별 수정·삭제 기능 연결
   section
-    .querySelectorAll(".timeline-item")
+    .querySelectorAll(
+      ".timeline-item"
+    )
     .forEach((itemElement) => {
       bindItemEditing(
         dayId,
@@ -902,9 +1067,13 @@ function bindDayEvents(dayId) {
         dayId,
         itemElement
       );
+
+      bindGourmetSelectionEvents(
+        dayId,
+        itemElement
+      );
     });
 
-  // 일정 추가 버튼
   const addItemButton =
     section.querySelector(
       ".v2-add-item-btn"
@@ -923,7 +1092,6 @@ function bindDayEvents(dayId) {
     );
   }
 
-  // 일차 삭제 버튼
   const deleteDayButton =
     section.querySelector(
       ".v2-delete-day-btn"
@@ -977,22 +1145,11 @@ function bindItemEditing(
       ".v2-budget-input"
     );
 
-  const gourmetType =
-    itemElement.querySelector(
-      ".v2-item-gourmet-type"
-    );
-
-  const placeSelect =
-    itemElement.querySelector(
-      ".v2-item-place"
-    );
-
   const googleMapSearchButton =
     itemElement.querySelector(
       ".v2-google-map-search-btn"
     );
 
-  // 시간 저장
   if (timeInput) {
     timeInput.addEventListener(
       "change",
@@ -1023,10 +1180,6 @@ function bindItemEditing(
             ),
             normalizedTime
           );
-
-          console.log(
-            `✅ ${dayId}/${itemId} 시간 저장 및 자동 정렬 완료`
-          );
         } catch (error) {
           console.error(
             "❌ 시간 저장 실패",
@@ -1041,7 +1194,6 @@ function bindItemEditing(
     );
   }
 
-  // 제목 저장
   if (nameElement) {
     nameElement.addEventListener(
       "blur",
@@ -1054,10 +1206,6 @@ function bindItemEditing(
             ),
             nameElement.innerText.trim()
           );
-
-          console.log(
-            `✅ ${dayId}/${itemId} 제목 저장 완료`
-          );
         } catch (error) {
           console.error(
             "❌ 제목 저장 실패",
@@ -1068,7 +1216,6 @@ function bindItemEditing(
     );
   }
 
-  // 설명 저장
   if (descriptionElement) {
     descriptionElement.addEventListener(
       "blur",
@@ -1083,10 +1230,6 @@ function bindItemEditing(
               .innerHTML
               .trim()
           );
-
-          console.log(
-            `✅ ${dayId}/${itemId} 설명 저장 완료`
-          );
         } catch (error) {
           console.error(
             "❌ 설명 저장 실패",
@@ -1097,7 +1240,6 @@ function bindItemEditing(
     );
   }
 
-  // 경비 저장
   if (budgetInput) {
     budgetInput.addEventListener(
       "change",
@@ -1119,10 +1261,6 @@ function bindItemEditing(
           calculateDayBudget(
             dayId
           );
-
-          console.log(
-            `✅ ${dayId}/${itemId} 경비 저장 완료`
-          );
         } catch (error) {
           console.error(
             "❌ 경비 저장 실패",
@@ -1133,70 +1271,6 @@ function bindItemEditing(
     );
   }
 
-  // 식사·간식 종류 변경
-  if (gourmetType) {
-    gourmetType.addEventListener(
-      "change",
-      async () => {
-        try {
-          await set(
-            ref(
-              db,
-              `${itemPath}/selectedType`
-            ),
-            gourmetType.value
-          );
-
-          // 종류가 바뀌면 기존 장소 선택 초기화
-          await set(
-            ref(
-              db,
-              `${itemPath}/selectedPlaceId`
-            ),
-            ""
-          );
-
-          console.log(
-            `✅ ${dayId}/${itemId} 종류 변경 완료`
-          );
-        } catch (error) {
-          console.error(
-            "❌ 식사·간식 종류 저장 실패",
-            error
-          );
-        }
-      }
-    );
-  }
-
-  // 식사·간식 장소 선택
-  if (placeSelect) {
-    placeSelect.addEventListener(
-      "change",
-      async () => {
-        try {
-          await set(
-            ref(
-              db,
-              `${itemPath}/selectedPlaceId`
-            ),
-            placeSelect.value
-          );
-
-          console.log(
-            `✅ ${dayId}/${itemId} 장소 선택 저장 완료`
-          );
-        } catch (error) {
-          console.error(
-            "❌ 장소 선택 저장 실패",
-            error
-          );
-        }
-      }
-    );
-  }
-
-  // 구글지도 검색
   if (googleMapSearchButton) {
     googleMapSearchButton.addEventListener(
       "click",
@@ -1232,6 +1306,207 @@ function bindItemEditing(
 }
 
 // =========================================
+// 식사·간식 동적 선택 기능
+// =========================================
+
+function bindGourmetSelectionEvents(
+  dayId,
+  itemElement
+) {
+  const itemId =
+    itemElement.dataset.itemId;
+
+  const gourmetType =
+    itemElement.dataset.gourmetType;
+
+  if (
+    !itemId ||
+    !gourmetType
+  ) {
+    return;
+  }
+
+  const addSelectionButton =
+    itemElement.querySelector(
+      ".v2-add-gourmet-selection-btn"
+    );
+
+  if (addSelectionButton) {
+    addSelectionButton.addEventListener(
+      "click",
+      async () => {
+        addSelectionButton.disabled =
+          true;
+
+        addSelectionButton.textContent =
+          "추가 중...";
+
+        try {
+          const selectionRef =
+            push(
+              ref(
+                db,
+                `${tripBasePath}/days/${dayId}/items/${itemId}/selectedItems`
+              )
+            );
+
+          await set(
+            selectionRef,
+            {
+              placeId: ""
+            }
+          );
+        } catch (error) {
+          console.error(
+            "❌ 식사·간식 선택행 추가 실패",
+            error
+          );
+
+          window.alert(
+            "선택행을 추가하지 못했습니다."
+          );
+
+          addSelectionButton.disabled =
+            false;
+
+          addSelectionButton.textContent =
+            gourmetType === "간식"
+              ? "➕ 간식 장소 추가"
+              : "➕ 식당 추가";
+        }
+      }
+    );
+  }
+
+  itemElement
+    .querySelectorAll(
+      ".v2-dynamic-gourmet-select"
+    )
+    .forEach((selectElement) => {
+      const row =
+        selectElement.closest(
+          ".v2-gourmet-selection-row"
+        );
+
+      if (!row) {
+        return;
+      }
+
+      const selectionId =
+        row.dataset.selectionId;
+
+      const isLegacy =
+        row.dataset.isLegacy ===
+        "true";
+
+      selectElement.addEventListener(
+        "change",
+        async () => {
+          try {
+            if (isLegacy) {
+              await set(
+                ref(
+                  db,
+                  `${tripBasePath}/days/${dayId}/items/${itemId}/selectedPlaceId`
+                ),
+                selectElement.value
+              );
+            } else {
+              await set(
+                ref(
+                  db,
+                  `${tripBasePath}/days/${dayId}/items/${itemId}/selectedItems/${selectionId}/placeId`
+                ),
+                selectElement.value
+              );
+            }
+          } catch (error) {
+            console.error(
+              "❌ 식사·간식 장소 저장 실패",
+              error
+            );
+
+            window.alert(
+              "장소 선택을 저장하지 못했습니다."
+            );
+          }
+        }
+      );
+    });
+
+  itemElement
+    .querySelectorAll(
+      ".v2-delete-gourmet-selection-btn"
+    )
+    .forEach((button) => {
+      const row =
+        button.closest(
+          ".v2-gourmet-selection-row"
+        );
+
+      if (!row) {
+        return;
+      }
+
+      const selectionId =
+        row.dataset.selectionId;
+
+      const isLegacy =
+        row.dataset.isLegacy ===
+        "true";
+
+      button.addEventListener(
+        "click",
+        async () => {
+          const confirmed =
+            window.confirm(
+              "이 장소 선택을 삭제하시겠습니까?"
+            );
+
+          if (!confirmed) {
+            return;
+          }
+
+          button.disabled = true;
+          button.textContent =
+            "...";
+
+          try {
+            if (isLegacy) {
+              await remove(
+                ref(
+                  db,
+                  `${tripBasePath}/days/${dayId}/items/${itemId}/selectedPlaceId`
+                )
+              );
+            } else {
+              await remove(
+                ref(
+                  db,
+                  `${tripBasePath}/days/${dayId}/items/${itemId}/selectedItems/${selectionId}`
+                )
+              );
+            }
+          } catch (error) {
+            console.error(
+              "❌ 식사·간식 선택 삭제 실패",
+              error
+            );
+
+            window.alert(
+              "선택한 장소를 삭제하지 못했습니다."
+            );
+
+            button.disabled = false;
+            button.textContent =
+              "✕";
+          }
+        }
+      );
+    });
+}
+
+// =========================================
 // 일정 삭제
 // =========================================
 
@@ -1256,7 +1531,9 @@ function bindItemDelete(
 
       const itemName =
         itemElement
-          .querySelector(".spot-name")
+          .querySelector(
+            ".spot-name"
+          )
           ?.innerText
           .trim() ||
         "선택한 일정";
@@ -1281,10 +1558,6 @@ function bindItemDelete(
             `${tripBasePath}/days/${dayId}/items/${itemId}`
           )
         );
-
-        console.log(
-          `✅ ${dayId}/${itemId} 삭제 완료`
-        );
       } catch (error) {
         console.error(
           "❌ 일정 삭제 실패",
@@ -1304,7 +1577,7 @@ function bindItemDelete(
 }
 
 // =========================================
-// 일정 추가
+// 일정·식사·간식 추가
 // =========================================
 
 async function addNewItem(
@@ -1328,14 +1601,12 @@ async function addNewItem(
   const selectedType =
     typeSelect.value;
 
-  // 시간 입력 팝업
   const enteredTime =
     window.prompt(
       "추가할 시간을 입력해 주세요.\n예: 09:30 또는 1430",
       ""
     );
 
-  // 취소 버튼을 누른 경우
   if (enteredTime === null) {
     return;
   }
@@ -1378,16 +1649,22 @@ async function addNewItem(
   };
 
   const newItem = {
-    order: highestOrder + 1,
-    type: selectedType,
-    time: normalizedTime,
+    order:
+      highestOrder + 1,
+
+    type:
+      selectedType,
+
+    time:
+      normalizedTime,
+
     name:
       defaultNames[selectedType] ||
       "새 일정",
+
     budget: 0
   };
 
-  // 일반 일정
   if (selectedType === "place") {
     newItem.descriptionHtml =
       "이곳을 눌러 이동경로와 설명을 입력하세요.";
@@ -1395,26 +1672,15 @@ async function addNewItem(
     newItem.mapLink = "";
   }
 
-  // 식사
   if (selectedType === "meal") {
     newItem.selectedType =
       "식사";
-
-    newItem.selectedPlaceId =
-      "";
   }
 
-  // 간식
   if (selectedType === "snack") {
     newItem.selectedType =
       "간식";
-
-    newItem.selectedPlaceId =
-      "";
   }
-
-  const itemsPath =
-    `${tripBasePath}/days/${dayId}/items`;
 
   if (addButton) {
     addButton.disabled = true;
@@ -1428,7 +1694,7 @@ async function addNewItem(
       push(
         ref(
           db,
-          itemsPath
+          `${tripBasePath}/days/${dayId}/items`
         )
       );
 
@@ -1438,19 +1704,16 @@ async function addNewItem(
     );
 
     console.log(
-      `✅ ${dayId}에 ${
-        normalizedTime ||
-        "시간 미지정"
-      } 항목 추가 완료`
+      `✅ ${dayId}에 ${normalizedTime || "시간 미지정"} ${selectedType} 추가 완료`
     );
   } catch (error) {
     console.error(
-      "❌ 일정 추가 실패",
+      "❌ 항목 추가 실패",
       error
     );
 
     window.alert(
-      "일정을 추가하지 못했습니다.\n인터넷 연결과 Firebase 권한을 확인해 주세요."
+      "항목을 추가하지 못했습니다.\n인터넷 연결과 Firebase 권한을 확인해 주세요."
     );
   } finally {
     if (addButton) {
@@ -1479,7 +1742,8 @@ if (addDayButton) {
 }
 
 async function addNewDay() {
-  const days = getSortedDays();
+  const days =
+    getSortedDays();
 
   const highestOrder =
     days.reduce(
@@ -1530,14 +1794,18 @@ async function addNewDay() {
         items: {
           initialItem: {
             order: 1,
+
             type: "place",
+
             time: "",
+
             name: "새 일정",
 
             descriptionHtml:
               "이곳을 눌러 이동경로와 설명을 입력하세요.",
 
             budget: 0,
+
             mapLink: ""
           }
         }
@@ -1546,13 +1814,9 @@ async function addNewDay() {
 
     activeDayId =
       newDayId;
-
-    console.log(
-      `✅ ${nextOrder}일차 추가 완료`
-    );
   } catch (error) {
     console.error(
-      "❌ 새 일차 추가 실패",
+      "❌ 일차 추가 실패",
       error
     );
 
@@ -1612,10 +1876,6 @@ async function deleteDay(dayId) {
     activeDayId = null;
 
     await reorderDays();
-
-    console.log(
-      `✅ ${dayNumber}일차 삭제 완료`
-    );
   } catch (error) {
     console.error(
       "❌ 일차 삭제 실패",
@@ -1629,7 +1889,7 @@ async function deleteDay(dayId) {
 }
 
 // =========================================
-// 일차 삭제 후 순서 재정렬
+// 일차 순서 재정렬
 // =========================================
 
 async function reorderDays() {
@@ -1658,7 +1918,7 @@ async function reorderDays() {
 }
 
 // =========================================
-// 일차별 경비 계산
+// 경비 계산
 // =========================================
 
 function calculateDayBudget(dayId) {
@@ -1698,10 +1958,6 @@ function calculateDayBudget(dayId) {
   calculateTravelTotalBudget();
 }
 
-// =========================================
-// 전체 여행 경비 계산
-// =========================================
-
 function calculateTravelTotalBudget() {
   let total = 0;
 
@@ -1726,13 +1982,13 @@ function calculateTravelTotalBudget() {
 }
 
 // =========================================
-// 맛집·간식 선택 목록 생성
+// 식사·간식 드롭다운 생성
 // =========================================
 
-function refreshAllPlaceDropdowns() {
+function refreshAllGourmetDropdowns() {
   document
     .querySelectorAll(
-      ".v2-item-place"
+      ".v2-dynamic-gourmet-select"
     )
     .forEach((selectElement) => {
       const itemElement =
@@ -1740,13 +1996,9 @@ function refreshAllPlaceDropdowns() {
           ".timeline-item"
         );
 
-      const typeSelect =
-        itemElement?.querySelector(
-          ".v2-item-gourmet-type"
-        );
-
-      const selectedType =
-        typeSelect?.value ||
+      const gourmetType =
+        itemElement?.dataset
+          .gourmetType ||
         "식사";
 
       const selectedPlaceId =
@@ -1760,12 +2012,16 @@ function refreshAllPlaceDropdowns() {
             (
               item.shopType ||
               "식사"
-            ) === selectedType
+            ) === gourmetType
         );
 
       selectElement.innerHTML = `
         <option value="">
-          -- 장소 선택 --
+          -- ${
+            gourmetType === "간식"
+              ? "간식 장소"
+              : "식당"
+          } 선택 --
         </option>
 
         ${filteredItems
