@@ -17,6 +17,7 @@ const tripBasePath = `trips/${currentTripId}`;
 let currentDays = {};
 let activeDayId = null;
 let gourmetItems = [];
+let packItems = [];
 
 console.log("✅ Travel Planner V2 통합 시스템 시작");
 
@@ -303,6 +304,10 @@ Object.entries(
 // 맛집·간식 공용 데이터
 // =========================================
 
+// =========================================
+// 맛집·간식 공용 데이터 실시간 읽기
+// =========================================
+
 onValue(
   ref(db, "gourmet_guide"),
   (snapshot) => {
@@ -336,7 +341,17 @@ onValue(
           );
         });
 
+    // 일정 안의 식사·간식 선택 드롭다운 갱신
     refreshAllGourmetDropdowns();
+
+    // 맛집/간식 관리 탭 목록 갱신
+    renderRestaurantsList();
+  },
+  (error) => {
+    console.error(
+      "❌ 맛집·간식 데이터 읽기 실패",
+      error
+    );
   }
 );
 
@@ -2047,3 +2062,887 @@ function refreshAllGourmetDropdowns() {
       `;
     });
 }
+// =========================================
+// 맛집·간식 관리 탭 복원
+// =========================================
+
+function renderRestaurantsList() {
+  const container =
+    document.getElementById(
+      "restaurant-list-container"
+    );
+
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (gourmetItems.length === 0) {
+    container.innerHTML = `
+      <div
+        style="
+          padding:15px;
+          text-align:center;
+          color:#718096;
+        "
+      >
+        등록된 맛집·간식 장소가 없습니다.
+      </div>
+    `;
+
+    return;
+  }
+
+  gourmetItems.forEach((item) => {
+    const itemElement =
+      document.createElement("div");
+
+    itemElement.className =
+      "checklist-item";
+
+    const type =
+      item.shopType || "식사";
+
+    const badgeClass =
+      type === "간식"
+        ? "snack"
+        : "meal";
+
+    const mapButton =
+      item.shopLink
+        ? `
+          <a
+            href="${escapeHtml(item.shopLink)}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="map-btn rest-map-btn"
+            style="margin:0;"
+          >
+            🗺️ 지도
+          </a>
+        `
+        : "";
+
+    itemElement.innerHTML = `
+      <div
+        style="
+          flex:1;
+          min-width:0;
+          padding-right:8px;
+        "
+      >
+        <div
+          style="
+            display:flex;
+            align-items:center;
+            gap:5px;
+            flex-wrap:wrap;
+          "
+        >
+          <span class="badge ${badgeClass}">
+            ${escapeHtml(type)}
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              item.shopName || "이름 없음"
+            )}
+          </strong>
+        </div>
+
+        ${
+          item.shopMemo
+            ? `
+              <div
+                style="
+                  margin-top:5px;
+                  color:#718096;
+                  font-size:0.82rem;
+                  line-height:1.4;
+                "
+              >
+                ${escapeHtml(item.shopMemo)}
+              </div>
+            `
+            : ""
+        }
+      </div>
+
+      <div
+        style="
+          display:flex;
+          align-items:center;
+          gap:5px;
+          flex:none;
+        "
+      >
+        ${mapButton}
+
+        <button
+          type="button"
+          class="mini-del-btn"
+          data-action="edit-shop"
+          data-shop-id="${escapeHtml(item.id)}"
+          title="수정"
+        >
+          ✏️
+        </button>
+
+        <button
+          type="button"
+          class="mini-del-btn"
+          data-action="delete-shop"
+          data-shop-id="${escapeHtml(item.id)}"
+          title="삭제"
+        >
+          ❌
+        </button>
+      </div>
+    `;
+
+    container.appendChild(
+      itemElement
+    );
+  });
+
+  container
+    .querySelectorAll(
+      '[data-action="edit-shop"]'
+    )
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          editShop(
+            button.dataset.shopId
+          );
+        }
+      );
+    });
+
+  container
+    .querySelectorAll(
+      '[data-action="delete-shop"]'
+    )
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          deleteShop(
+            button.dataset.shopId
+          );
+        }
+      );
+    });
+}
+
+// =========================================
+// 맛집·간식 저장
+// =========================================
+
+async function handleSaveShop() {
+  const shopTypeElement =
+    document.getElementById(
+      "shopType"
+    );
+
+  const shopNameElement =
+    document.getElementById(
+      "shopName"
+    );
+
+  const shopLinkElement =
+    document.getElementById(
+      "shopLink"
+    );
+
+  const shopMemoElement =
+    document.getElementById(
+      "shopMemo"
+    );
+
+  const editingIdElement =
+    document.getElementById(
+      "editingId"
+    );
+
+  const saveButton =
+    document.getElementById(
+      "saveBtn"
+    );
+
+  if (
+    !shopTypeElement ||
+    !shopNameElement ||
+    !editingIdElement
+  ) {
+    window.alert(
+      "맛집·간식 입력 폼을 찾지 못했습니다."
+    );
+
+    return;
+  }
+
+  const shopType =
+    shopTypeElement.value ||
+    "식사";
+
+  const shopName =
+    shopNameElement.value.trim();
+
+  const shopLink =
+    shopLinkElement
+      ?.value
+      .trim() || "";
+
+  const shopMemo =
+    shopMemoElement
+      ?.value
+      .trim() || "";
+
+  const editingId =
+    editingIdElement.value.trim();
+
+  if (!shopName) {
+    window.alert(
+      "가게 이름을 입력해 주세요."
+    );
+
+    shopNameElement.focus();
+
+    return;
+  }
+
+  const shopData = {
+    shopType,
+    shopName,
+    shopLink,
+    shopMemo,
+    updatedAt:
+      new Date().toISOString()
+  };
+
+  if (saveButton) {
+    saveButton.disabled = true;
+    saveButton.textContent =
+      "저장 중...";
+  }
+
+  try {
+    if (editingId) {
+      await set(
+        ref(
+          db,
+          `gourmet_guide/${editingId}`
+        ),
+        shopData
+      );
+    } else {
+      const newShopRef =
+        push(
+          ref(
+            db,
+            "gourmet_guide"
+          )
+        );
+
+      await set(
+        newShopRef,
+        {
+          ...shopData,
+
+          createdAt:
+            new Date().toISOString()
+        }
+      );
+    }
+
+    clearShopForm();
+
+    console.log(
+      "✅ 맛집·간식 저장 완료"
+    );
+  } catch (error) {
+    console.error(
+      "❌ 맛집·간식 저장 실패",
+      error
+    );
+
+    window.alert(
+      "맛집·간식을 저장하지 못했습니다."
+    );
+  } finally {
+    if (saveButton) {
+      saveButton.disabled = false;
+      saveButton.textContent =
+        "서버에 저장";
+    }
+  }
+}
+
+// =========================================
+// 맛집·간식 수정
+// =========================================
+
+function editShop(shopId) {
+  const selectedItem =
+    gourmetItems.find(
+      (item) =>
+        item.id === shopId
+    );
+
+  if (!selectedItem) {
+    window.alert(
+      "수정할 항목을 찾지 못했습니다."
+    );
+
+    return;
+  }
+
+  const shopTypeElement =
+    document.getElementById(
+      "shopType"
+    );
+
+  const shopNameElement =
+    document.getElementById(
+      "shopName"
+    );
+
+  const shopLinkElement =
+    document.getElementById(
+      "shopLink"
+    );
+
+  const shopMemoElement =
+    document.getElementById(
+      "shopMemo"
+    );
+
+  const editingIdElement =
+    document.getElementById(
+      "editingId"
+    );
+
+  const cancelButton =
+    document.getElementById(
+      "cancelBtn"
+    );
+
+  const saveButton =
+    document.getElementById(
+      "saveBtn"
+    );
+
+  if (shopTypeElement) {
+    shopTypeElement.value =
+      selectedItem.shopType ||
+      "식사";
+  }
+
+  if (shopNameElement) {
+    shopNameElement.value =
+      selectedItem.shopName ||
+      "";
+  }
+
+  if (shopLinkElement) {
+    shopLinkElement.value =
+      selectedItem.shopLink ||
+      "";
+  }
+
+  if (shopMemoElement) {
+    shopMemoElement.value =
+      selectedItem.shopMemo ||
+      "";
+  }
+
+  if (editingIdElement) {
+    editingIdElement.value =
+      selectedItem.id;
+  }
+
+  if (cancelButton) {
+    cancelButton.style.display =
+      "inline-block";
+  }
+
+  if (saveButton) {
+    saveButton.textContent =
+      "수정 저장";
+  }
+
+  shopNameElement?.focus();
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+// =========================================
+// 맛집·간식 삭제
+// =========================================
+
+async function deleteShop(shopId) {
+  const selectedItem =
+    gourmetItems.find(
+      (item) =>
+        item.id === shopId
+    );
+
+  const shopName =
+    selectedItem?.shopName ||
+    "선택한 장소";
+
+  const confirmed =
+    window.confirm(
+      `「${shopName}」을 삭제하시겠습니까?\n일정에서 이 장소를 선택한 기록은 빈 선택으로 표시될 수 있습니다.`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await remove(
+      ref(
+        db,
+        `gourmet_guide/${shopId}`
+      )
+    );
+
+    console.log(
+      "✅ 맛집·간식 삭제 완료"
+    );
+  } catch (error) {
+    console.error(
+      "❌ 맛집·간식 삭제 실패",
+      error
+    );
+
+    window.alert(
+      "맛집·간식을 삭제하지 못했습니다."
+    );
+  }
+}
+
+// =========================================
+// 맛집·간식 입력 폼 초기화
+// =========================================
+
+function clearShopForm() {
+  const shopTypeElement =
+    document.getElementById(
+      "shopType"
+    );
+
+  const shopNameElement =
+    document.getElementById(
+      "shopName"
+    );
+
+  const shopLinkElement =
+    document.getElementById(
+      "shopLink"
+    );
+
+  const shopMemoElement =
+    document.getElementById(
+      "shopMemo"
+    );
+
+  const editingIdElement =
+    document.getElementById(
+      "editingId"
+    );
+
+  const cancelButton =
+    document.getElementById(
+      "cancelBtn"
+    );
+
+  const saveButton =
+    document.getElementById(
+      "saveBtn"
+    );
+
+  if (shopTypeElement) {
+    shopTypeElement.value =
+      "식사";
+  }
+
+  if (shopNameElement) {
+    shopNameElement.value =
+      "";
+  }
+
+  if (shopLinkElement) {
+    shopLinkElement.value =
+      "";
+  }
+
+  if (shopMemoElement) {
+    shopMemoElement.value =
+      "";
+  }
+
+  if (editingIdElement) {
+    editingIdElement.value =
+      "";
+  }
+
+  if (cancelButton) {
+    cancelButton.style.display =
+      "none";
+  }
+
+  if (saveButton) {
+    saveButton.textContent =
+      "서버에 저장";
+  }
+}
+
+// HTML의 onclick에서도 사용할 수 있도록 공개
+window.clearShopForm =
+  clearShopForm;
+
+// 저장 버튼 이벤트 연결
+const shopSaveButton =
+  document.getElementById(
+    "saveBtn"
+  );
+
+if (
+  shopSaveButton &&
+  !shopSaveButton.dataset
+    .v2ListenerBound
+) {
+  shopSaveButton.dataset
+    .v2ListenerBound =
+    "true";
+
+  shopSaveButton.addEventListener(
+    "click",
+    handleSaveShop
+  );
+}
+
+// =========================================
+// 준비물 Firebase 실시간 읽기
+// =========================================
+
+onValue(
+  ref(db, "planner_packs"),
+  (snapshot) => {
+    const data =
+      snapshot.val() || {};
+
+    packItems =
+      Object.entries(data)
+        .map(([id, value]) => ({
+          id,
+          ...value
+        }));
+
+    renderPackList();
+  },
+  (error) => {
+    console.error(
+      "❌ 준비물 데이터 읽기 실패",
+      error
+    );
+  }
+);
+
+// =========================================
+// 준비물 목록 출력
+// =========================================
+
+function renderPackList() {
+  const container =
+    document.getElementById(
+      "custom-pack-container"
+    );
+
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (packItems.length === 0) {
+    container.innerHTML = `
+      <div
+        style="
+          padding:15px;
+          text-align:center;
+          color:#718096;
+        "
+      >
+        등록된 준비물이 없습니다.
+      </div>
+    `;
+
+    return;
+  }
+
+  packItems.forEach((item) => {
+    const itemElement =
+      document.createElement("div");
+
+    itemElement.className =
+      "checklist-item";
+
+    itemElement.innerHTML = `
+      <div
+        style="
+          display:flex;
+          align-items:center;
+          gap:10px;
+          flex:1;
+          min-width:0;
+        "
+      >
+        <input
+          type="checkbox"
+          class="v2-pack-check"
+          data-pack-id="${escapeHtml(item.id)}"
+          ${
+            item.checked
+              ? "checked"
+              : ""
+          }
+        >
+
+        <input
+          type="text"
+          class="v2-pack-text"
+          data-pack-id="${escapeHtml(item.id)}"
+          value="${escapeHtml(item.text || "")}"
+          style="
+            font-size:0.95rem;
+            border:none;
+            background:transparent;
+            width:85%;
+            min-width:0;
+          "
+        >
+      </div>
+
+      <button
+        type="button"
+        class="mini-del-btn v2-delete-pack-btn"
+        data-pack-id="${escapeHtml(item.id)}"
+      >
+        ❌
+      </button>
+    `;
+
+    container.appendChild(
+      itemElement
+    );
+  });
+
+  container
+    .querySelectorAll(
+      ".v2-pack-check"
+    )
+    .forEach((checkbox) => {
+      checkbox.addEventListener(
+        "change",
+        () => {
+          togglePackCheck(
+            checkbox.dataset.packId,
+            checkbox.checked
+          );
+        }
+      );
+    });
+
+  container
+    .querySelectorAll(
+      ".v2-pack-text"
+    )
+    .forEach((input) => {
+      input.addEventListener(
+        "change",
+        () => {
+          updatePackText(
+            input.dataset.packId,
+            input.value
+          );
+        }
+      );
+
+      input.addEventListener(
+        "blur",
+        () => {
+          updatePackText(
+            input.dataset.packId,
+            input.value
+          );
+        }
+      );
+    });
+
+  container
+    .querySelectorAll(
+      ".v2-delete-pack-btn"
+    )
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          deletePackItem(
+            button.dataset.packId
+          );
+        }
+      );
+    });
+}
+
+// =========================================
+// 준비물 추가
+// =========================================
+
+async function addNewPackItem() {
+  const newPackRef =
+    push(
+      ref(
+        db,
+        "planner_packs"
+      )
+    );
+
+  try {
+    await set(
+      newPackRef,
+      {
+        text: "새 준비물",
+        checked: false,
+        createdAt:
+          new Date().toISOString()
+      }
+    );
+
+    console.log(
+      "✅ 준비물 추가 완료"
+    );
+  } catch (error) {
+    console.error(
+      "❌ 준비물 추가 실패",
+      error
+    );
+
+    window.alert(
+      "준비물을 추가하지 못했습니다."
+    );
+  }
+}
+
+// =========================================
+// 준비물 체크 저장
+// =========================================
+
+async function togglePackCheck(
+  packId,
+  checked
+) {
+  try {
+    await set(
+      ref(
+        db,
+        `planner_packs/${packId}/checked`
+      ),
+      checked
+    );
+  } catch (error) {
+    console.error(
+      "❌ 준비물 체크 저장 실패",
+      error
+    );
+  }
+}
+
+// =========================================
+// 준비물 문구 저장
+// =========================================
+
+async function updatePackText(
+  packId,
+  text
+) {
+  try {
+    await set(
+      ref(
+        db,
+        `planner_packs/${packId}/text`
+      ),
+      String(text || "").trim()
+    );
+  } catch (error) {
+    console.error(
+      "❌ 준비물 문구 저장 실패",
+      error
+    );
+  }
+}
+
+// =========================================
+// 준비물 삭제
+// =========================================
+
+async function deletePackItem(packId) {
+  const selectedItem =
+    packItems.find(
+      (item) =>
+        item.id === packId
+    );
+
+  const itemName =
+    selectedItem?.text ||
+    "선택한 준비물";
+
+  const confirmed =
+    window.confirm(
+      `「${itemName}」 준비물을 삭제하시겠습니까?`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await remove(
+      ref(
+        db,
+        `planner_packs/${packId}`
+      )
+    );
+  } catch (error) {
+    console.error(
+      "❌ 준비물 삭제 실패",
+      error
+    );
+
+    window.alert(
+      "준비물을 삭제하지 못했습니다."
+    );
+  }
+}
+
+// 기존 HTML onclick 호환
+window.addNewPackItem =
+  addNewPackItem;
+
+window.togglePackCheck =
+  togglePackCheck;
+
+window.updatePackText =
+  updatePackText;
+
+window.deletePackItem =
+  deletePackItem;
