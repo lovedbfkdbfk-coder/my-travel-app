@@ -835,7 +835,7 @@ function createGourmetSelectionRows(item) {
     });
   }
 
-  // 새로운 다중 선택 데이터
+  // 다중 선택 데이터
   Object.entries(
     item.selectedItems || {}
   ).forEach(
@@ -872,6 +872,10 @@ function createGourmetSelectionRows(item) {
         selectedShop?.shopMemo ||
         "등록된 간단메모가 없습니다.";
 
+      const savedMapLink =
+        selectedShop?.shopLink ||
+        "";
+
       return `
         <div
           class="v2-gourmet-selection-row"
@@ -883,6 +887,12 @@ function createGourmetSelectionRows(item) {
               ? "true"
               : "false"
           }"
+          data-shop-name="${escapeHtml(
+            shopName
+          )}"
+          data-map-link="${escapeHtml(
+            savedMapLink
+          )}"
         >
           <div class="v2-selected-gourmet-info">
             <div class="v2-selected-gourmet-name">
@@ -894,13 +904,23 @@ function createGourmetSelectionRows(item) {
             </div>
           </div>
 
-          <button
-            type="button"
-            class="v2-delete-gourmet-selection-btn"
-            title="등록된 장소 삭제"
-          >
-            삭제
-          </button>
+          <div class="v2-gourmet-row-actions">
+            <button
+              type="button"
+              class="v2-gourmet-map-btn"
+              title="구글지도에서 열기"
+            >
+              🗺️ 지도
+            </button>
+
+            <button
+              type="button"
+              class="v2-delete-gourmet-selection-btn"
+              title="등록된 장소 삭제"
+            >
+              삭제
+            </button>
+          </div>
         </div>
       `;
     })
@@ -1499,6 +1519,52 @@ function bindGourmetSelectionEvents(
     );
   }
 
+    // -----------------------------------------
+  // 등록된 식당·간식 구글지도 열기
+  // -----------------------------------------
+
+  itemElement
+    .querySelectorAll(
+      ".v2-gourmet-map-btn"
+    )
+    .forEach((button) => {
+      const row =
+        button.closest(
+          ".v2-gourmet-selection-row"
+        );
+
+      if (!row) {
+        return;
+      }
+
+      button.addEventListener(
+        "click",
+        () => {
+          const shopName =
+            row.dataset.shopName || "";
+
+          const savedMapLink =
+            row.dataset.mapLink || "";
+
+          let mapUrl = savedMapLink;
+
+          // 저장된 링크가 없으면 가게명으로 구글지도 검색
+          if (!mapUrl) {
+            mapUrl =
+              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                shopName
+              )}`;
+          }
+
+          window.open(
+            mapUrl,
+            "_blank",
+            "noopener,noreferrer"
+          );
+        }
+      );
+    });
+    
   // -----------------------------------------
   // 하단 등록 장소 삭제
   // -----------------------------------------

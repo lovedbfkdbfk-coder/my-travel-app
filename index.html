@@ -644,6 +644,72 @@
         align-items: flex-start;
     }
 }    
+    /* =========================================
+   등록된 식당·간식 우측 지도·삭제 버튼
+========================================= */
+
+.v2-gourmet-row-actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.v2-gourmet-map-btn {
+    flex: none;
+    background-color: #4285F4;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 9px;
+    font-size: 0.76rem;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(66, 133, 244, 0.22);
+}
+
+.v2-gourmet-map-btn:hover {
+    background-color: #3367D6;
+}
+
+.v2-gourmet-map-btn:active {
+    transform: translateY(1px);
+}
+
+.v2-gourmet-selection-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+}
+
+.v2-selected-gourmet-info {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+/* 모바일에서는 버튼 크기를 줄임 */
+@media (max-width: 520px) {
+    .v2-gourmet-selection-row {
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .v2-gourmet-row-actions {
+        gap: 4px;
+    }
+
+    .v2-gourmet-map-btn,
+    .v2-delete-gourmet-selection-btn {
+        padding: 6px 7px;
+        font-size: 0.7rem;
+    }
+}
     </style>
 </head>
 <body>
