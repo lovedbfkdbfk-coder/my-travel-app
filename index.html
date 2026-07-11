@@ -42,7 +42,22 @@
         .day-budget-badge { font-size: 0.8rem; background-color: #48BB78; color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
         
         .timeline { border-left: 2px dashed #CBD5E0; margin-left: 10px; padding-left: 15px; }
-        .timeline-item { margin-bottom: 22px; position: relative; }
+        .timeline-item { margin-bottom: 22px; position: relative; padding-top: 30px; }
+        .v2-delete-item-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #FFF5F5;
+            color: #C53030;
+            border: 1px solid #FEB2B2;
+            border-radius: 14px;
+            padding: 4px 9px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .v2-delete-item-btn:hover { background: #FED7D7; }
+        .v2-delete-item-btn:disabled { opacity: 0.55; cursor: wait; }
         .timeline-item::before { content: ''; position: absolute; left: -20px; top: 5px; width: 8px; height: 8px; background-color: white; border: 2px solid var(--primary-color); border-radius: 50%; }
         
         .time-input { font-size: 0.8rem; font-weight: bold; color: white; background-color: var(--time-color); border: none; padding: 2px 6px; border-radius: 4px; margin-right: 5px; width: 55px; text-align: center; }
@@ -78,377 +93,171 @@
         .loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; font-weight: bold; z-index: 1000; color: #2B6CB0; font-size: 16px; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .v2-delete-item-btn {
+    float: right;
+    background-color: #E53E3E;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.v2-delete-item-btn:hover {
+    background-color: #C53030;
+}
+
+.v2-delete-item-btn:disabled {
+    background-color: #A0AEC0;
+    cursor: not-allowed;
+}
+/* =========================================
+   V2 동적 일차 탭
+========================================= */
+
+#main-nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+
+.dynamic-day-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.day-tab-btn {
+    flex: none;
+    min-width: 72px;
+}
+
+.add-day-tab-btn {
+    flex: none;
+    background-color: #38A169;
+    color: white;
+}
+
+.add-day-tab-btn:hover {
+    background-color: #2F855A;
+}
+
+.utility-tab-btn {
+    flex: none;
+}
+
+.v2-day-section {
+    display: none;
+}
+
+.v2-day-section.active {
+    display: block;
+    animation: fadeIn 0.25s ease;
+}
+
+.v2-day-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.v2-delete-day-btn {
+    background-color: #C53030;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.76rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.v2-delete-day-btn:hover {
+    background-color: #9B2C2C;
+}
+
+.v2-delete-day-btn:disabled {
+    background-color: #A0AEC0;
+    cursor: not-allowed;
+}
+
+.v2-delete-item-btn {
+    float: right;
+    background-color: #E53E3E;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.v2-delete-item-btn:hover {
+    background-color: #C53030;
+}
+
+.v2-delete-item-btn:disabled {
+    background-color: #A0AEC0;
+    cursor: not-allowed;
+}    
     </style>
 </head>
 <body>
 
-    <header>
-        <h1 contenteditable="true" id="trip-title">후쿠오카 가족 여행 ✈️</h1>
-    <p contenteditable="true" id="trip-date">2026.07.22 ~ 07.25 (3박 4일)</p>
-    
-    <div class="flight-info">
-        <div contenteditable="true" id="flight-out">🛫 출국편: 부산(13:05) → 후쿠오카(14:05)</div>
-        <div contenteditable="true" id="flight-in">🛬 귀국편: 후쿠오카(14:55) → 부산(15:55)</div>
-    </div>
-    
-    <div contenteditable="true" class="family-badge" id="hotel-info">🏠 숙소: 레지던스 호텔 하카타에키미나미</div>
-    
+<header>
+<h1 id="v2-trip-title" contenteditable="true"></h1>
+<p id="v2-trip-date" contenteditable="true"></p>
+<div id="v2-flight-out" contenteditable="true"></div>
+<div id="v2-flight-in" contenteditable="true"></div>
+<div class="family-badge" id="v2-hotel-info" contenteditable="true"></div>
+
     <div class="total-budget-header">
-        💵 여행 총 경비 합계: <span id="total-budget-sum" contenteditable="true">0</span>원
-    </div>
-        <div class="sync-status" id="sync-indicator">🔄 구분형 및 지출 실시간 연동엔진 작동 중</div>
-    </header>
-
-    <div class="nav-tabs">
-        <button class="tab-btn active" onclick="openTab('day1', this)">1일차</button>
-        <button class="tab-btn" onclick="openTab('day2', this)">2일차</button>
-        <button class="tab-btn" onclick="openTab('day3', this)">3일차</button>
-        <button class="tab-btn" onclick="openTab('day4', this)">4일차</button>
-        <button class="tab-btn" onclick="openTab('restaurants', this)">🍴 맛집/간식 관리</button>
-        <button class="tab-btn" onclick="openTab('pack', this)">🎒 준비물</button>
+        💵 여행 총 경비 합계:
+        <span id="total-budget-sum">0</span>원
     </div>
 
-    <!-- 1일차 -->
-    <div id="day1" class="content-section active">
-        <div class="card">
-            <div class="card-title">
-                <span contenteditable="true" id="day1_title">▶ 1일차: 입국 & 시내 산책</span>
-                <span class="day-budget-badge">1일차 지출: <span id="budget_day1">0</span></span>
-            </div>
-            <div class="timeline">
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t1_1" value="14:05" onchange="saveInputData('t1_1')">
-                    <div class="spot-name" contenteditable="true" id="name1_1">후쿠오카 공항 입국 & 수하물 수령</div>
-                    <div class="route-box" contenteditable="true" id="route1_1"><strong>🚌 공항 이동 상세 안내:</strong><br>• 국제선 터미널 전면 셔틀버스 정류장에서 <b>무료 셔틀버스</b> 탑승 ➔ 국내선 터미널(지하철역)로 이동 (약 10~15분 소요).</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_1" placeholder="0" onchange="saveInputData('b_1_1');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t1_2" value="14:50" onchange="saveInputData('t1_2')">
-                    <div class="spot-name" contenteditable="true" id="name1_2">지하철 공항선 탑승 ➔ 하카타역 이동</div>
-                    <div class="route-box" contenteditable="true" id="route1_2"><strong>🚇 지하철 상세 안내:</strong><br>• 국내선 터미널 지하 <b>후쿠오카공항역</b> ➔ <b>하카타역</b> 이동 (2정거장, 약 5분 소요).</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_2" placeholder="0" onchange="saveInputData('b_1_2');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t1_3" value="15:10" onchange="saveInputData('t1_3')">
-                    <div class="spot-name" contenteditable="true" id="name1_3">>하카타역 치쿠시구치 시내버스 탑승 ➔ 숙소</div>
-                    <div class="route-box" contenteditable="true" id="route1_3"><strong>🚌 버스 상세 안내:</strong><br>• 하카타역 치쿠시구치 정류장에서 <b>44번 버스</b> 탑승 ➔ <b>미노시마 2초메(美野島二丁目)</b> 정류장 하차 후 도보 3분.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_3" placeholder="0" onchange="saveInputData('b_1_3');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t1_4" value="15:40" onchange="saveInputData('t1_4')">
-                    <div class="spot-name" contenteditable="true" id="name1_4">숙소 체크인 및 짐 보관, 정비</div>
-                    <div class="route-box" contenteditable="true" id="route1_4">🏠 <b>레지던스 호텔 하카타에키미나미</b> 정비 후 가벼운 복장으로 도보 이동 출발.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_4" placeholder="0" onchange="saveInputData('b_1_4');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t1_snack1" value="16:20" onchange="saveInputData('t1_snack1')">
-                    <div class="spot-name">🍰 1일차 오후 간식 타임 (여러 개 선택 가능)</div>
-                    <div id="container_d1_snack1" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_snack1" placeholder="0" onchange="saveInputData('b_1_snack1');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t1_5" value="17:00" onchange="saveInputData('t1_5')">
-                    <div class="spot-name" contenteditable="true" id="name1_5">캐널시티 하카타 분수쇼 관람 & 산책</div>
-                    <div class="route-box" contenteditable="true" id="route1_5"><strong>🚶‍♂️ 이동 상세:</strong> 숙소에서 도보 약 15~18분 이동. 대형 복합 쇼핑몰 구경 및 정각 분수쇼 관람.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_5" placeholder="0" onchange="saveInputData('b_1_5');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t1_dinner" value="18:30" onchange="saveInputData('t1_dinner')">
-                    <div class="spot-name">🍽️ 1일차 저녁 식사</div>
-                    <div class="restaurant-box">
-                        <div class="rest-grid">
-                            <select class="type-select" id="type_d1_dinner" onchange="filterDropdownBySelection('d1_dinner')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
-                            <select class="rest-select" id="sel_d1_dinner" onchange="selectRestaurant('d1_dinner')"><option value="">-- 로딩중 --</option></select>
-                        </div>
-                        <a class="map-btn rest-map-btn" id="btn_d1_dinner" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
-                    </div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_dinner" placeholder="0" onchange="saveInputData('b_1_dinner');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t1_6" value="20:00" onchange="saveInputData('t1_6')">
-                    <div class="spot-name" contenteditable="true" id="name1_6">나카스 강변 미나메 야경 산책</div>
-                    <div class="route-box" contenteditable="true" id="route1_6"><strong>🚶‍♂️ 이동 상세:</strong> 캐널시티 바로 옆 나카스 강변을 따라 산책하며 일본 특유의 포장마차(야타이) 거리 정취 구경.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_6" placeholder="0" onchange="saveInputData('b_1_6');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t1_snack2" value="21:00" onchange="saveInputData('t1_snack2')">
-                    <div class="spot-name">🌙 1일차 야식/디저트 간식 타임</div>
-                    <div id="container_d1_snack2" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day1" id="b_1_snack2" placeholder="0" onchange="saveInputData('b_1_snack2');calculateLiveBudgets();"></div>
-                </div>
-            </div>
-        </div>
+    <div class="sync-status" id="sync-indicator">
+        🔄 Travel Planner V2
     </div>
+</header>
+    <div class="nav-tabs" id="main-nav-tabs">
+    <!-- 여행 일차 탭은 app.js가 자동 생성 -->
+    <div id="v2-day-tabs" class="dynamic-day-tabs"></div>
 
-    <!-- 2일차 -->
-    <div id="day2" class="content-section">
-        <div class="card">
-            <div class="card-title">
-                <span contenteditable="true" id="day2_title">▶ 2일차: 다자이후 & 모모치 야경</span>
-                <span class="day-budget-badge">2일차 지출: <span id="budget_day2">0</span></span>
-            </div>
-            <div class="timeline">
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_breakfast" value="08:00" onchange="saveInputData('t2_breakfast')">
-                    <div class="spot-name">☀️ 2일차 아침 식사</div>
-                    <div class="restaurant-box">
-                        <div class="rest-grid">
-                            <select class="type-select" id="type_d2_breakfast" onchange="filterDropdownBySelection('d2_breakfast')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
-                            <select class="rest-select" id="sel_d2_breakfast" onchange="selectRestaurant('d2_breakfast')"><option value="">-- 로딩중 --</option></select>
-                        </div>
-                        <a class="map-btn rest-map-btn" id="btn_d2_breakfast" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
-                    </div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_breakfast" placeholder="0" onchange="saveInputData('b_2_breakfast');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_1" value="09:00" onchange="saveInputData('t2_1')">
-                    <div class="spot-name" contenteditable="true" id="name2_1">하카타 버스터미널 ➔ 다자이후 이동</div>
-                    <div class="route-box" contenteditable="true" id="route2_1"><strong>🚌 버스 상세 안내:</strong><br>• 하카타 버스터미널 1층 11번 승차장 ➔ <b>다자이후행 직행버스(우메도노호 선)</b> 탑승 (약 40분 소요).</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_1" placeholder="0" onchange="saveInputData('b_2_1');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_2" value="09:50" onchange="saveInputData('t2_2')">
-                    <div class="spot-name" contenteditable="true" id="name2_2">다자이후 텐만구 및 상점가 관광</div>
-                    <div class="route-box" contenteditable="true" id="route2_2"><strong>🚶‍♂️ 코스 안내:</strong> 학문의 신을 모시는 신사 관람 및 독특한 인테리어의 스타벅스 컨셉스토어 방문.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_2" placeholder="0" onchange="saveInputData('b_2_2');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_snack1" value="11:00" onchange="saveInputData('t2_snack1')">
-                    <div class="spot-name">🍡 2일차 오전 간식 타임</div>
-                    <div id="container_d2_snack1" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_snack1" placeholder="0" onchange="saveInputData('b_2_snack1');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_lunch" value="12:30" onchange="saveInputData('t2_lunch')">
-                    <div class="spot-name">🍽️ 2일차 점심 식사</div>
-                    <div class="restaurant-box">
-                        <div class="rest-grid">
-                            <select class="type-select" id="type_d2_lunch" onchange="filterDropdownBySelection('d2_lunch')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
-                            <select class="rest-select" id="sel_d2_lunch" onchange="selectRestaurant('d2_lunch')"><option value="">-- 로딩중 --</option></select>
-                        </div>
-                        <a class="map-btn rest-map-btn" id="btn_d2_lunch" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
-                    </div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_lunch" placeholder="0" onchange="saveInputData('b_2_lunch');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_3" value="14:00" onchange="saveInputData('t2_3')">
-                    <div class="spot-name" contenteditable="true" id="name2_3">다자이후 ➔ 하카타 복귀 후 모모치 해변 이동</div>
-                    <div class="route-box" contenteditable="true" id="route2_3"><strong>🚌 버스 환승 안내:</strong><br>① 다자이후 정류장에서 직행버스로 하카타 복귀.<br>② 하카타 버스터미널 1층 6번 승차장 ➔ <b>306번 버스</b> 탑승 ➔ <b>후쿠오카 타워 남문</b> 하차.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_3" placeholder="0" onchange="saveInputData('b_2_3');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_4" value="15:30" onchange="saveInputData('t2_4')">
-                    <div class="spot-name" contenteditable="true" id="name2_4">씨사이드 모모치 해변공원 & 마리존 산책</div>
-                    <div class="route-box" contenteditable="true" id="route2_4"><strong>🏖️ 명소 안내:</strong> 인공 해변과 이국적인 해상 예식장 마리존 배경으로 기념사진 촬영.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_4" placeholder="0" onchange="saveInputData('b_2_4');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_snack2" value="16:30" onchange="saveInputData('t2_snack2')">
-                    <div class="spot-name">☕ 2일차 오후 간식 타임</div>
-                    <div id="container_d2_snack2" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_snack2" placeholder="0" onchange="saveInputData('b_2_snack2');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_5" value="17:30" onchange="saveInputData('t2_5')">
-                    <div class="spot-name" contenteditable="true" id="name2_5">후쿠오카 타워 전망대 야경 관람</div>
-                    <div class="route-box" contenteditable="true" id="route2_5"><strong>🗼 타워 안내:</strong> 멋진 후쿠오카 시내 밤하늘과 해안선 야경 감상 (매표소에서 티켓 구매 후 엘리베이터 탑승).</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_5" placeholder="0" onchange="saveInputData('b_2_5');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_dinner" value="18:45" onchange="saveInputData('t2_dinner')">
-                    <div class="spot-name">🍽️ 2일차 저녁 식사</div>
-                    <div class="restaurant-box">
-                        <div class="rest-grid">
-                            <select class="type-select" id="type_d2_dinner" onchange="filterDropdownBySelection('d2_dinner')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
-                            <select class="rest-select" id="sel_d2_dinner" onchange="selectRestaurant('d2_dinner')"><option value="">-- 로딩중 --</option></select>
-                        </div>
-                        <a class="map-btn rest-map-btn" id="btn_d2_dinner" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
-                    </div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_dinner" placeholder="0" onchange="saveInputData('b_2_dinner');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_6" value="20:30" onchange="saveInputData('t2_6')">
-                    <div class="spot-name" contenteditable="true" id="name2_6">모모치 ➔ 하카타 숙소 복귀 안내</div>
-                    <div class="route-box" contenteditable="true" id="route2_6"><strong>🚌 시내버스 복귀:</strong> 후쿠오카 타워 정류장에서 <b>302번 또는 306번 버스</b> 탑승 ➔ 하카타역 복귀 후 숙소 도보 이동.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_6" placeholder="0" onchange="saveInputData('b_2_6');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t2_snack3" value="21:30" onchange="saveInputData('t2_snack3')">
-                    <div class="spot-name">🍦 2일차 야식 간식 타임</div>
-                    <div id="container_d2_snack3" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day2" id="b_2_snack3" placeholder="0" onchange="saveInputData('b_2_snack3');calculateLiveBudgets();"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <button
+        id="v2-add-day-btn"
+        class="tab-btn add-day-tab-btn"
+        type="button"
+    >
+        ➕ 일차 추가
+    </button>
 
-    <!-- 3일차 -->
-    <div id="day3" class="content-section">
-        <div class="card">
-            <div class="card-title">
-                <span contenteditable="true" id="day3_title">▶ 3일차: 모지코 & 고쿠라 투어</span>
-                <span class="day-budget-badge">3일차 지출: <span id="budget_day3">0</span></span>
-            </div>
-            <div class="timeline">
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_breakfast" value="08:00" onchange="saveInputData('t3_breakfast')">
-                    <div class="spot-name">☀️ 3일차 아침 식사</div>
-                    <div class="restaurant-box">
-                        <div class="rest-grid">
-                            <select class="type-select" id="type_d3_breakfast" onchange="filterDropdownBySelection('d3_breakfast')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
-                            <select class="rest-select" id="sel_d3_breakfast" onchange="selectRestaurant('d3_breakfast')"><option value="">-- 로딩중 --</option></select>
-                        </div>
-                        <a class="map-btn rest-map-btn" id="btn_d3_breakfast" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
-                    </div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_breakfast" placeholder="0" onchange="saveInputData('b_3_breakfast');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_1" value="08:50" onchange="saveInputData('t3_1')">
-                    <div class="spot-name" contenteditable="true" id="name3_1">하카타역 ➔ 모지코역 열차 이동</div>
-                    <div class="route-box" contenteditable="true" id="route3_1"><strong>🚄 JR 열차 이용 안내 (재래선 기준):</strong><br>• 하카타역 ➔ <b>JR 가고시마 본선(쾌속/구간쾌속)</b> 탑승 ➔ <b>모지코역</b> 종점 직행 하차 (약 1시간 20~30분 소요).</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_1" placeholder="0" onchange="saveInputData('b_3_1');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_2" value="10:20" onchange="saveInputData('t3_2')">
-                    <div class="spot-name" contenteditable="true" id="name3_2">모지코 레트로 지구 산책 & 블루윙 모지 도보교</div>
-                    <div class="route-box" contenteditable="true" id="route3_2"><strong>🚶‍♂️ 코스 안내:</strong> 앤틱한 모지코 역사 구경, 시간에 맞춰 열리는 열개교(블루윙 모지) 건너기, 레트로 감성 건물 감상.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_2" placeholder="0" onchange="saveInputData('b_3_2');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_snack1" value="10:50" onchange="saveInputData('t3_snack1')">
-                    <div class="spot-name">🍌 3일차 오전 간식 타임</div>
-                    <div id="container_d3_snack1" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_snack1" placeholder="0" onchange="saveInputData('b_3_snack1');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_lunch" value="12:00" onchange="saveInputData('t3_lunch')">
-                    <div class="spot-name">🍽️ 3일차 점심 식사</div>
-                    <div class="restaurant-box">
-                        <div class="rest-grid">
-                            <select class="type-select" id="type_d3_lunch" onchange="filterDropdownBySelection('d3_lunch')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
-                            <select class="rest-select" id="sel_d3_lunch" onchange="selectRestaurant('d3_lunch')"><option value="">-- 로딩중 --</option></select>
-                        </div>
-                        <a class="map-btn rest-map-btn" id="btn_d3_lunch" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
-                    </div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_lunch" placeholder="0" onchange="saveInputData('b_3_lunch');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_3" value="13:30" onchange="saveInputData('t3_3')">
-                    <div class="spot-name" contenteditable="true" id="name3_3">모지코역 ➔ 고쿠라역 이동 (기차)</div>
-                    <div class="route-box" contenteditable="true" id="route3_3"><strong>🚇 일반 열차 안내:</strong> 모지코역 ➔ JR 가고시마 본선 탑승 ➔ <b>고쿠라역</b> 하차 (약 15분 소요).</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_3" placeholder="0" onchange="saveInputData('b_3_3');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_4" value="14:00" onchange="saveInputData('t3_4')">
-                    <div class="spot-name" contenteditable="true" id="name3_4">고쿠라 성 및 리버워크 기타큐슈 산책</div>
-                    <div class="route-box" contenteditable="true" id="route3_4"><strong>🚶‍♂️ 코스 안내:</strong> 고쿠라역에서 도보 10분 거리의 전통 고쿠라 성 주변과 현대적 복합쇼핑몰 리버워크 광장 관광.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_4" placeholder="0" onchange="saveInputData('b_3_4');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_snack2" value="15:30" onchange="saveInputData('t3_snack2')">
-                    <div class="spot-name">🍩 3일차 오후 간식 타임</div>
-                    <div id="container_d3_snack2" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_snack2" placeholder="0" onchange="saveInputData('b_3_snack2');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_5" value="16:30" onchange="saveInputData('t3_5')">
-                    <div class="spot-name" contenteditable="true" id="name3_5">탄가 시장 구경 후 고쿠라역 복귀 준비</div>
-                    <div class="route-box" contenteditable="true" id="route3_5"><strong>🛒 재래시장 안내:</strong> 기타큐슈의 부엌이라 불리는 오래된 전통 탄가 시장 골목길 소소하게 구경하기.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_5" placeholder="0" onchange="saveInputData('b_3_5');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_6" value="17:30" onchange="saveInputData('t3_6')">
-                    <div class="spot-name" contenteditable="true" id="name3_6">고쿠라역 ➔ 하카타역 복귀 기차</div>
-                    <div class="route-box" contenteditable="true" id="route3_6"><strong>🚄 기차 이동 안내:</strong> 고쿠라역 ➔ JR 가고시마 본선(특급 소닉 또는 쾌속열차) 탑승 ➔ 하카타역 복귀 (특급 기준 약 50분 소요).</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_6" placeholder="0" onchange="saveInputData('b_3_6');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_dinner" value="18:45" onchange="saveInputData('t3_dinner')">
-                    <div class="spot-name">🍽️ 3일차 저녁 식사</div>
-                    <div class="restaurant-box">
-                        <div class="rest-grid">
-                            <select class="type-select" id="type_d3_dinner" onchange="filterDropdownBySelection('d3_dinner')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
-                            <select class="rest-select" id="sel_d3_dinner" onchange="selectRestaurant('d3_dinner')"><option value="">-- 로딩중 --</option></select>
-                        </div>
-                        <a class="map-btn rest-map-btn" id="btn_d3_dinner" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
-                    </div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_dinner" placeholder="0" onchange="saveInputData('b_3_dinner');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t3_snack3" value="21:00" onchange="saveInputData('t3_snack3')">
-                    <div class="spot-name">🍻 3일차 편의점 야식 타임</div>
-                    <div id="container_d3_snack3" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day3" id="b_3_snack3" placeholder="0" onchange="saveInputData('b_3_snack3');calculateLiveBudgets();"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <button
+        class="tab-btn utility-tab-btn"
+        type="button"
+        data-static-tab="restaurants"
+    >
+        🍴 맛집/간식 관리
+    </button>
 
-    <!-- 4일차 -->
-    <div id="day4" class="content-section">
-        <div class="card">
-            <div class="card-title">
-                <span contenteditable="true" id="day4_title">▶ 4일차: 하카타 쇼핑 & 출국</span>
-                <span class="day-budget-badge">4일차 지출: <span id="budget_day4">0</span></span>
-            </div>
-            <div class="timeline">
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t4_breakfast" value="08:30" onchange="saveInputData('t4_breakfast')">
-                    <div class="spot-name">☀️ 4일차 아침 식사</div>
-                    <div class="restaurant-box">
-                        <div class="rest-grid">
-                            <select class="type-select" id="type_d4_breakfast" onchange="filterDropdownBySelection('d4_breakfast')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
-                            <select class="rest-select" id="sel_d4_breakfast" onchange="selectRestaurant('d4_breakfast')"><option value="">-- 로딩중 --</option></select>
-                        </div>
-                        <a class="map-btn rest-map-btn" id="btn_d4_breakfast" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
-                    </div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_breakfast" placeholder="0" onchange="saveInputData('b_4_breakfast');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t4_1" value="09:30" onchange="saveInputData('t4_1')">
-                    <div class="spot-name" contenteditable="true" id="name4_1">숙소 체크아웃 후 하카타역 코인라커 캐리어 보관</div>
-                    <div class="route-box" contenteditable="true" id="route4_1"><strong>🧳 체크아웃:</strong> 짐 정리 후 버스(44번)를 타고 하카타역으로 이동해 라커에 짐 맡기기.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_1" placeholder="0" onchange="saveInputData('b_4_1');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t4_2" value="10:00" onchange="saveInputData('t4_2')">
-                    <div class="spot-name" contenteditable="true" id="name4_2">하카타 한큐 백화점 및 아뮤플라자 막바지 기념품 쇼핑</div>
-                    <div class="route-box" contenteditable="true" id="route4_2"><strong>🛍️ 쇼핑 코스:</strong> 손수건, 기념 식품류 및 백화점 지하 가토 페스타 하라다 러스크 등 구매.</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_2" placeholder="0" onchange="saveInputData('b_4_2');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t4_snack1" value="10:45" onchange="saveInputData('t4_snack1')">
-                    <div class="spot-name">🍡 4일차 오전 간식 타임</div>
-                    <div id="container_d4_snack1" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_snack1" placeholder="0" onchange="saveInputData('b_4_snack1');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t4_lunch" value="11:30" onchange="saveInputData('t4_lunch')">
-                    <div class="spot-name">🍽️ 4일차 점심 식사</div>
-                    <div class="restaurant-box">
-                        <div class="rest-grid">
-                            <select class="type-select" id="type_d4_lunch" onchange="filterDropdownBySelection('d4_lunch')"><option value="식사" selected>식사</option><option value="간식">간식</option></select>
-                            <select class="rest-select" id="sel_d4_lunch" onchange="selectRestaurant('d4_lunch')"><option value="">-- 로딩중 --</option></select>
-                        </div>
-                        <a class="map-btn rest-map-btn" id="btn_d4_lunch" href="#" target="_blank" style="display:none;">🗺️ 식당 지도 보기</a>
-                    </div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_lunch" placeholder="0" onchange="saveInputData('b_4_lunch');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t4_3" value="12:40" onchange="saveInputData('t4_3')">
-                    <div class="spot-name" contenteditable="true" id="name4_3">하카타역 출발 ➔ 후쿠오카 공항 이동</div>
-                    <div class="route-box" contenteditable="true" id="route4_3"><strong>🚇 지하철 & 셔틀버스 귀국안내:</strong><br>① 하카타역에서 지하철 공항선 탑승 ➔ 후쿠오카공항역 하차.<br>② 국내선 터미널 전면에서 <b>무료 셔틀버스</b> 탑승 ➔ 국제선 터미널 이동 (비행기 출발 2시간 전 도착 필수).</div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_3" placeholder="0" onchange="saveInputData('b_4_3');calculateLiveBudgets();"></div>
-                </div>
-                <div class="timeline-item">
-                    <input type="text" class="time-input" id="t4_snack2" value="13:40" onchange="saveInputData('t4_snack2')">
-                    <div class="spot-name">🛫 4일차 면세점 인도 및 마지막 간식 타임</div>
-                    <div id="container_d4_snack2" style="margin-top:6px;"></div>
-                    <div class="spot-budget-container">💰 경비: <input type="number" class="spot-budget-input data-budget-day4" id="b_4_snack2" placeholder="0" onchange="saveInputData('b_4_snack2');calculateLiveBudgets();"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <button
+        class="tab-btn utility-tab-btn"
+        type="button"
+        data-static-tab="pack"
+    >
+        🎒 준비물
+    </button>
+</div>
+
+<!-- 모든 여행 일차 본문이 이곳에 자동 생성됩니다. -->
+<div id="v2-days-container"></div>
+
 
     <!-- 맛집/간식 관리 탭 -->
     <div id="restaurants" class="content-section">
@@ -512,20 +321,8 @@
            remove
         } from "./firebase.js";
         
-        // 고정형 식사 슬롯 리스트
-        const mealSlots = [
-            'd1_dinner', 'd2_breakfast', 'd2_lunch', 'd2_dinner',
-            'd3_breakfast', 'd3_lunch', 'd3_dinner', 'd4_breakfast', 'd4_lunch'
-        ];
-
-        // 동적 확장형 간식 그룹 타겟 리스트
-        let restaurantItems = [];
-        let packItems = [];
-        let currentDBInputs = {};
-        const snackSlots = [
-            'd1_snack1', 'd1_snack2', 'd2_snack1', 'd2_snack2', 'd2_snack3',
-            'd3_snack1', 'd3_snack2', 'd3_snack3', 'd4_snack1', 'd4_snack2'
-        ];
+        const mealSlots = [];
+const snackSlots = [];
 
         function initRealtimeEngine() {
             const loading = document.getElementById('loading');
@@ -936,19 +733,6 @@ window.deleteSnack = async function(slot, deleteIdx) {
             initRealtimeEngine();
         });
     </script>
-
-    <script>
-        function openTab(tabId, button) {
-            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-
-            const section = document.getElementById(tabId);
-            if (section) section.classList.add('active');
-            if (button) button.classList.add('active');
-
-            window.scrollTo({top: 0, behavior: 'smooth'});
-        }
-    </script>
-
+<script type="module" src="./app.js"></script>
 </body>
 </html>
