@@ -21,7 +21,7 @@ let gourmetItems = [];
 console.log("✅ Travel Planner V2 동적 일차 시스템 시작");
 
 // =========================================
-// HTML 특수문자 안전 처리
+// 공용 유틸리티
 // =========================================
 
 function escapeHtml(value = "") {
@@ -32,27 +32,65 @@ function escapeHtml(value = "") {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
-// =========================================
-// 일정 시간을 분 단위 숫자로 변환
-// 예: 09:30 → 570분
-// =========================================
 
-function timeToMinutes(timeValue) {
-  if (!timeValue) {
-    return Number.MAX_SAFE_INTEGER;
+// 시간 입력값을 HH:MM 형식으로 변환
+// 930  → 09:30
+// 1430 → 14:30
+// 9:30 → 09:30
+// 9.30 → 09:30
+function normalizeTimeInput(value) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return "";
   }
 
-  const normalizedTime = String(timeValue)
-    .trim()
-    .replace(".", ":");
+  if (/^\d{3}$/.test(text)) {
+    const hour = Number(text.slice(0, 1));
+    const minute = Number(text.slice(1));
 
-  const match = normalizedTime.match(
+    if (
+      hour >= 0 &&
+      hour <= 23 &&
+      minute >= 0 &&
+      minute <= 59
+    ) {
+      return (
+        `${String(hour).padStart(2, "0")}:` +
+        `${String(minute).padStart(2, "0")}`
+      );
+    }
+
+    return null;
+  }
+
+  if (/^\d{4}$/.test(text)) {
+    const hour = Number(text.slice(0, 2));
+    const minute = Number(text.slice(2));
+
+    if (
+      hour >= 0 &&
+      hour <= 23 &&
+      minute >= 0 &&
+      minute <= 59
+    ) {
+      return (
+        `${String(hour).padStart(2, "0")}:` +
+        `${String(minute).padStart(2, "0")}`
+      );
+    }
+
+    return null;
+  }
+
+  const normalized = text.replace(".", ":");
+
+  const match = normalized.match(
     /^(\d{1,2}):(\d{1,2})$/
   );
 
   if (!match) {
-    // 시간이 없거나 형식이 잘못된 일정은 맨 아래로 보냅니다.
-    return Number.MAX_SAFE_INTEGER;
+    return null;
   }
 
   const hour = Number(match[1]);
@@ -64,65 +102,126 @@ function timeToMinutes(timeValue) {
     minute < 0 ||
     minute > 59
   ) {
+    return null;
+  }
+
+  return (
+    `${String(hour).padStart(2, "0")}:` +
+    `${String(minute).padStart(2, "0")}`
+  );
+}
+
+// 시간을 정렬용 숫자로 변환
+function timeToMinutes(timeValue) {
+  const normalized =
+    normalizeTimeInput(timeValue);
+
+  // 시간이 없거나 잘못된 형식이면 아래쪽으로 이동
+  if (!normalized) {
     return Number.MAX_SAFE_INTEGER;
   }
+
+  const [hour, minute] =
+    normalized.split(":").map(Number);
 
   return hour * 60 + minute;
 }
 
-// =========================================
-// 일정 항목 시간순 정렬
-// 시간이 같으면 기존 order 순서를 사용
-// =========================================
-
+// 일정 시간순 정렬
 function sortItemsByTime(items) {
   return [...items].sort((a, b) => {
-    const timeDifference =
+    const difference =
       timeToMinutes(a.time) -
       timeToMinutes(b.time);
 
-    if (timeDifference !== 0) {
-      return timeDifference;
+    if (difference !== 0) {
+      return difference;
     }
 
+    // 시간이 같으면 기존 생성 순서 유지
     return (
       (Number(a.order) || 0) -
       (Number(b.order) || 0)
     );
   });
 }
+
+// 일차 순서 정렬
+function getSortedDays() {
+  return Object.entries(currentDays)
+    .map(([id, day]) => ({
+      id,
+      ...day
+    }))
+    .sort(
+      (a, b) =>
+        (Number(a.order) || 0) -
+        (Number(b.order) || 0)
+    );
+}
+
 // =========================================
 // 여행 기본정보 출력
 // =========================================
 
 function renderTripInfo(info = {}) {
-  const title = document.getElementById("v2-trip-title");
-  const date = document.getElementById("v2-trip-date");
-  const flightOut = document.getElementById("v2-flight-out");
-  const flightIn = document.getElementById("v2-flight-in");
-  const hotel = document.getElementById("v2-hotel-info");
+  const title =
+    document.getElementById("v2-trip-title");
 
-  if (title) title.textContent = info.title || "";
+  const date =
+    document.getElementById("v2-trip-date");
+
+  const flightOut =
+    document.getElementById("v2-flight-out");
+
+  const flightIn =
+    document.getElementById("v2-flight-in");
+
+  const hotel =
+    document.getElementById("v2-hotel-info");
+
+  if (title) {
+    title.textContent = info.title || "";
+  }
+
   if (date) {
     date.textContent =
       info.dateText ||
       `${info.startDate || ""} ~ ${info.endDate || ""}`;
   }
-  if (flightOut) flightOut.textContent = info.flightOut || "";
-  if (flightIn) flightIn.textContent = info.flightIn || "";
-  if (hotel) hotel.textContent = info.hotel || "";
-}
 
-onValue(ref(db, `${tripBasePath}/info`), (snapshot) => {
-  const info = snapshot.val();
-
-  if (!info) {
-    console.warn("⚠️ 여행 기본정보가 없습니다.");
-    return;
+  if (flightOut) {
+    flightOut.textContent =
+      info.flightOut || "";
   }
 
-  renderTripInfo(info);
-});
+  if (flightIn) {
+    flightIn.textContent =
+      info.flightIn || "";
+  }
+
+  if (hotel) {
+    hotel.textContent =
+      info.hotel || "";
+  }
+}
+
+onValue(
+  ref(db, `${tripBasePath}/info`),
+  (snapshot) => {
+    const info = snapshot.val();
+
+    if (!info) {
+      console.warn(
+        "⚠️ 여행 기본정보가 없습니다."
+      );
+
+      return;
+    }
+
+    renderTripInfo(info);
+  }
+);
 
 // =========================================
 // 여행 기본정보 수정 저장
@@ -138,21 +237,36 @@ const tripInfoFieldMap = {
 
 Object.entries(tripInfoFieldMap).forEach(
   ([elementId, firebaseField]) => {
-    const element = document.getElementById(elementId);
+    const element =
+      document.getElementById(elementId);
 
-    if (!element) return;
+    if (!element) {
+      return;
+    }
 
-    element.addEventListener("blur", async () => {
-      await set(
-        ref(
-          db,
-          `${tripBasePath}/info/${firebaseField}`
-        ),
-        element.innerText.trim()
-      );
+    element.addEventListener(
+      "blur",
+      async () => {
+        try {
+          await set(
+            ref(
+              db,
+              `${tripBasePath}/info/${firebaseField}`
+            ),
+            element.innerText.trim()
+          );
 
-      console.log(`✅ ${firebaseField} 저장 완료`);
-    });
+          console.log(
+            `✅ ${firebaseField} 저장 완료`
+          );
+        } catch (error) {
+          console.error(
+            `❌ ${firebaseField} 저장 실패`,
+            error
+          );
+        }
+      }
+    );
   }
 );
 
@@ -160,25 +274,29 @@ Object.entries(tripInfoFieldMap).forEach(
 // 맛집·간식 공용 데이터 읽기
 // =========================================
 
-onValue(ref(db, "gourmet_guide"), (snapshot) => {
-  const data = snapshot.val() || {};
+onValue(
+  ref(db, "gourmet_guide"),
+  (snapshot) => {
+    const data = snapshot.val() || {};
 
-  gourmetItems = Object.entries(data).map(
-    ([id, value]) => ({
-      id,
-      ...value
-    })
-  );
+    gourmetItems =
+      Object.entries(data).map(
+        ([id, value]) => ({
+          id,
+          ...value
+        })
+      );
 
-  gourmetItems.sort((a, b) =>
-    (a.shopName || "").localeCompare(
-      b.shopName || "",
-      "ko"
-    )
-  );
+    gourmetItems.sort((a, b) =>
+      (a.shopName || "").localeCompare(
+        b.shopName || "",
+        "ko"
+      )
+    );
 
-  refreshAllPlaceDropdowns();
-});
+    refreshAllPlaceDropdowns();
+  }
+);
 
 // =========================================
 // 모든 일차 실시간 읽기
@@ -193,14 +311,17 @@ onValue(
 
     if (sortedDays.length === 0) {
       activeDayId = null;
+
       renderDayTabs([]);
       renderDays([]);
+
       return;
     }
 
-    const activeDayStillExists = sortedDays.some(
-      (day) => day.id === activeDayId
-    );
+    const activeDayStillExists =
+      sortedDays.some(
+        (day) => day.id === activeDayId
+      );
 
     if (!activeDayStillExists) {
       activeDayId = sortedDays[0].id;
@@ -212,61 +333,58 @@ onValue(
 );
 
 // =========================================
-// 일차 정렬
-// =========================================
-
-function getSortedDays() {
-  return Object.entries(currentDays)
-    .map(([id, day]) => ({
-      id,
-      ...day
-    }))
-    .sort(
-      (a, b) =>
-        (Number(a.order) || 0) -
-        (Number(b.order) || 0)
-    );
-}
-
-// =========================================
-// 탭 생성
+// 일차 탭 생성
 // =========================================
 
 function renderDayTabs(days) {
   const tabContainer =
-    document.getElementById("v2-day-tabs");
+    document.getElementById(
+      "v2-day-tabs"
+    );
 
-  if (!tabContainer) return;
+  if (!tabContainer) {
+    return;
+  }
 
-  tabContainer.innerHTML = days
-    .map((day) => {
-      const dayNumber = Number(day.order) || 1;
-      const activeClass =
-        day.id === activeDayId ? "active" : "";
+  tabContainer.innerHTML =
+    days
+      .map((day) => {
+        const dayNumber =
+          Number(day.order) || 1;
 
-      return `
-        <button
-          type="button"
-          class="tab-btn day-tab-btn ${activeClass}"
-          data-day-id="${escapeHtml(day.id)}"
-        >
-          ${dayNumber}일차
-        </button>
-      `;
-    })
-    .join("");
+        const activeClass =
+          day.id === activeDayId
+            ? "active"
+            : "";
+
+        return `
+          <button
+            type="button"
+            class="tab-btn day-tab-btn ${activeClass}"
+            data-day-id="${escapeHtml(day.id)}"
+          >
+            ${dayNumber}일차
+          </button>
+        `;
+      })
+      .join("");
 
   tabContainer
     .querySelectorAll(".day-tab-btn")
     .forEach((button) => {
-      button.addEventListener("click", () => {
-        openDayTab(button.dataset.dayId);
-      });
+      button.addEventListener(
+        "click",
+        () => {
+          openDayTab(
+            button.dataset.dayId
+          );
+        }
+      );
     });
 }
 
 // =========================================
-// 일차 탭 열기
+// 여행 일차 탭 열기
 // =========================================
 
 function openDayTab(dayId) {
@@ -292,20 +410,28 @@ function openDayTab(dayId) {
 
   const selectedSection =
     document.querySelector(
-      `.v2-day-section[data-day-id="${CSS.escape(dayId)}"]`
+      `.v2-day-section[data-day-id="${CSS.escape(
+        dayId
+      )}"]`
     );
 
   const selectedButton =
     document.querySelector(
-      `.day-tab-btn[data-day-id="${CSS.escape(dayId)}"]`
+      `.day-tab-btn[data-day-id="${CSS.escape(
+        dayId
+      )}"]`
     );
 
   if (selectedSection) {
-    selectedSection.classList.add("active");
+    selectedSection.classList.add(
+      "active"
+    );
   }
 
   if (selectedButton) {
-    selectedButton.classList.add("active");
+    selectedButton.classList.add(
+      "active"
+    );
   }
 
   window.scrollTo({
@@ -318,7 +444,10 @@ function openDayTab(dayId) {
 // 맛집·준비물 고정 탭 열기
 // =========================================
 
-function openStaticTab(tabId, button) {
+function openStaticTab(
+  tabId,
+  button
+) {
   document
     .querySelectorAll(".content-section")
     .forEach((section) => {
@@ -334,10 +463,13 @@ function openStaticTab(tabId, button) {
   document
     .querySelectorAll(".tab-btn")
     .forEach((tabButton) => {
-      tabButton.classList.remove("active");
+      tabButton.classList.remove(
+        "active"
+      );
     });
 
-  const target = document.getElementById(tabId);
+  const target =
+    document.getElementById(tabId);
 
   if (target) {
     target.classList.add("active");
@@ -356,12 +488,15 @@ function openStaticTab(tabId, button) {
 document
   .querySelectorAll("[data-static-tab]")
   .forEach((button) => {
-    button.addEventListener("click", () => {
-      openStaticTab(
-        button.dataset.staticTab,
-        button
-      );
-    });
+    button.addEventListener(
+      "click",
+      () => {
+        openStaticTab(
+          button.dataset.staticTab,
+          button
+        );
+      }
+    );
   });
 
 // =========================================
@@ -370,13 +505,20 @@ document
 
 function renderDays(days) {
   const container =
-    document.getElementById("v2-days-container");
+    document.getElementById(
+      "v2-days-container"
+    );
 
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
-  container.innerHTML = days
-    .map((day) => createDaySectionHtml(day))
-    .join("");
+  container.innerHTML =
+    days
+      .map((day) =>
+        createDaySectionHtml(day)
+      )
+      .join("");
 
   days.forEach((day) => {
     bindDayEvents(day.id);
@@ -392,24 +534,35 @@ function renderDays(days) {
 
 function createDaySectionHtml(day) {
   const dayId = day.id;
-  const dayNumber = Number(day.order) || 1;
+
+  const dayNumber =
+    Number(day.order) || 1;
 
   const activeClass =
-    dayId === activeDayId ? "active" : "";
+    dayId === activeDayId
+      ? "active"
+      : "";
 
-  const items = sortItemsByTime(
-  Object.entries(day.items || {})
-    .map(([id, item]) => ({
-      id,
-      ...item
-    }))
-);
+  // 시간을 기준으로 자동 정렬
+  const items =
+    sortItemsByTime(
+      Object.entries(
+        day.items || {}
+      ).map(([id, item]) => ({
+        id,
+        ...item
+      }))
+    );
 
-  const itemsHtml = items
-    .map((item) =>
-      createItemHtml(dayId, item)
-    )
-    .join("");
+  const itemsHtml =
+    items
+      .map((item) =>
+        createItemHtml(
+          dayId,
+          item
+        )
+      )
+      .join("");
 
   const deleteDayButton =
     dayNumber === 1
@@ -430,16 +583,22 @@ function createDaySectionHtml(day) {
       data-day-id="${escapeHtml(dayId)}"
     >
       <div class="card">
+
         <div class="card-title">
+
           <span
             class="v2-day-title"
             contenteditable="true"
           >
-            ${day.title || `▶ ${dayNumber}일차`}
+            ${
+              day.title ||
+              `▶ ${dayNumber}일차`
+            }
           </span>
 
           <span class="day-budget-badge">
             ${dayNumber}일차 지출:
+
             <span
               class="v2-day-budget-total"
               data-day-id="${escapeHtml(dayId)}"
@@ -447,6 +606,7 @@ function createDaySectionHtml(day) {
               0
             </span>원
           </span>
+
         </div>
 
         <div class="v2-day-card-actions">
@@ -458,7 +618,10 @@ function createDaySectionHtml(day) {
         </div>
 
         <div class="add-btn-container">
-          <select class="type-select v2-new-item-type">
+
+          <select
+            class="type-select v2-new-item-type"
+          >
             <option value="place">
               📍 일정 추가
             </option>
@@ -478,7 +641,9 @@ function createDaySectionHtml(day) {
           >
             ➕ 시간대별 항목 추가
           </button>
+
         </div>
+
       </div>
     </section>
   `;
@@ -488,7 +653,10 @@ function createDaySectionHtml(day) {
 // 일정 항목 HTML 생성
 // =========================================
 
-function createItemHtml(dayId, item) {
+function createItemHtml(
+  dayId,
+  item
+) {
   const itemId = item.id;
 
   const deleteButton = `
@@ -501,36 +669,41 @@ function createItemHtml(dayId, item) {
     </button>
   `;
 
+  // 일반 일정
   if (item.type === "place") {
     return `
       <div
         class="timeline-item"
         data-item-id="${escapeHtml(itemId)}"
       >
+
         ${deleteButton}
 
         <input
           type="text"
           class="time-input"
           value="${escapeHtml(item.time || "")}"
+          placeholder="09:00"
         >
 
         <div class="v2-place-title-row">
-  <div
-    class="spot-name"
-    contenteditable="true"
-  >
-    ${item.name || ""}
-  </div>
 
-  <button
-    type="button"
-    class="v2-google-map-search-btn"
-    title="이 장소를 구글지도에서 검색"
-  >
-    🗺️ 지도검색
-  </button>
-</div>
+          <div
+            class="spot-name"
+            contenteditable="true"
+          >
+            ${item.name || ""}
+          </div>
+
+          <button
+            type="button"
+            class="v2-google-map-search-btn"
+            title="이 장소를 구글지도에서 검색"
+          >
+            🗺️ 지도검색
+          </button>
+
+        </div>
 
         <div
           class="route-box"
@@ -540,6 +713,7 @@ function createItemHtml(dayId, item) {
         </div>
 
         <div class="spot-budget-container">
+
           💰 경비:
 
           <input
@@ -547,11 +721,14 @@ function createItemHtml(dayId, item) {
             class="spot-budget-input v2-budget-input"
             value="${Number(item.budget) || 0}"
           >
+
         </div>
+
       </div>
     `;
   }
 
+  // 식사 또는 간식
   if (
     item.type === "meal" ||
     item.type === "snack"
@@ -561,17 +738,28 @@ function createItemHtml(dayId, item) {
         ? "🍽️ 식사"
         : "🍰 간식";
 
+    const defaultType =
+      item.type === "snack"
+        ? "간식"
+        : "식사";
+
+    const selectedType =
+      item.selectedType ||
+      defaultType;
+
     return `
       <div
         class="timeline-item"
         data-item-id="${escapeHtml(itemId)}"
       >
+
         ${deleteButton}
 
         <input
           type="text"
           class="time-input"
           value="${escapeHtml(item.time || "")}"
+          placeholder="09:00"
         >
 
         <div
@@ -588,15 +776,17 @@ function createItemHtml(dayId, item) {
               : ""
           }"
         >
+
           <div class="rest-grid">
+
             <select
               class="type-select v2-item-gourmet-type"
             >
+
               <option
                 value="식사"
                 ${
-                  (item.selectedType || "식사") ===
-                  "식사"
+                  selectedType === "식사"
                     ? "selected"
                     : ""
                 }
@@ -607,29 +797,33 @@ function createItemHtml(dayId, item) {
               <option
                 value="간식"
                 ${
-                  item.selectedType === "간식"
+                  selectedType === "간식"
                     ? "selected"
                     : ""
                 }
               >
                 간식
               </option>
+
             </select>
 
             <select
               class="rest-select v2-item-place"
-              data-selected-place-id="${
+              data-selected-place-id="${escapeHtml(
                 item.selectedPlaceId || ""
-              }"
+              )}"
             >
               <option value="">
                 -- 장소 선택 --
               </option>
             </select>
+
           </div>
+
         </div>
 
         <div class="spot-budget-container">
+
           💰 경비:
 
           <input
@@ -637,7 +831,9 @@ function createItemHtml(dayId, item) {
             class="spot-budget-input v2-budget-input"
             value="${Number(item.budget) || 0}"
           >
+
         </div>
+
       </div>
     `;
   }
@@ -652,46 +848,82 @@ function createItemHtml(dayId, item) {
 function bindDayEvents(dayId) {
   const section =
     document.querySelector(
-      `.v2-day-section[data-day-id="${CSS.escape(dayId)}"]`
+      `.v2-day-section[data-day-id="${CSS.escape(
+        dayId
+      )}"]`
     );
 
-  if (!section) return;
+  if (!section) {
+    return;
+  }
 
+  // 일차 제목 저장
   const titleElement =
-    section.querySelector(".v2-day-title");
+    section.querySelector(
+      ".v2-day-title"
+    );
 
   if (titleElement) {
     titleElement.addEventListener(
       "blur",
       async () => {
-        await set(
-          ref(
-            db,
-            `${tripBasePath}/days/${dayId}/title`
-          ),
-          titleElement.innerText.trim()
+        try {
+          await set(
+            ref(
+              db,
+              `${tripBasePath}/days/${dayId}/title`
+            ),
+            titleElement.innerText.trim()
+          );
+
+          console.log(
+            `✅ ${dayId} 제목 저장 완료`
+          );
+        } catch (error) {
+          console.error(
+            "❌ 일차 제목 저장 실패",
+            error
+          );
+        }
+      }
+    );
+  }
+
+  // 일정별 수정·삭제 기능 연결
+  section
+    .querySelectorAll(".timeline-item")
+    .forEach((itemElement) => {
+      bindItemEditing(
+        dayId,
+        itemElement
+      );
+
+      bindItemDelete(
+        dayId,
+        itemElement
+      );
+    });
+
+  // 일정 추가 버튼
+  const addItemButton =
+    section.querySelector(
+      ".v2-add-item-btn"
+    );
+
+  if (addItemButton) {
+    addItemButton.addEventListener(
+      "click",
+      () => {
+        addNewItem(
+          dayId,
+          section,
+          addItemButton
         );
       }
     );
   }
 
-  section
-    .querySelectorAll(".timeline-item")
-    .forEach((itemElement) => {
-      bindItemEditing(dayId, itemElement);
-      bindItemDelete(dayId, itemElement);
-    });
-
-  const addItemButton =
-    section.querySelector(".v2-add-item-btn");
-
-  if (addItemButton) {
-    addItemButton.addEventListener(
-      "click",
-      () => addNewItem(dayId, section)
-    );
-  }
-
+  // 일차 삭제 버튼
   const deleteDayButton =
     section.querySelector(
       ".v2-delete-day-btn"
@@ -700,7 +932,9 @@ function bindDayEvents(dayId) {
   if (deleteDayButton) {
     deleteDayButton.addEventListener(
       "click",
-      () => deleteDay(dayId)
+      () => {
+        deleteDay(dayId);
+      }
     );
   }
 }
@@ -713,21 +947,30 @@ function bindItemEditing(
   dayId,
   itemElement
 ) {
-  const itemId = itemElement.dataset.itemId;
+  const itemId =
+    itemElement.dataset.itemId;
 
-  if (!itemId) return;
+  if (!itemId) {
+    return;
+  }
 
   const itemPath =
     `${tripBasePath}/days/${dayId}/items/${itemId}`;
 
   const timeInput =
-    itemElement.querySelector(".time-input");
+    itemElement.querySelector(
+      ".time-input"
+    );
 
   const nameElement =
-    itemElement.querySelector(".spot-name");
+    itemElement.querySelector(
+      ".spot-name"
+    );
 
   const descriptionElement =
-    itemElement.querySelector(".route-box");
+    itemElement.querySelector(
+      ".route-box"
+    );
 
   const budgetInput =
     itemElement.querySelector(
@@ -743,229 +986,245 @@ function bindItemEditing(
     itemElement.querySelector(
       ".v2-item-place"
     );
-    const googleMapSearchButton =
-  itemElement.querySelector(
-    ".v2-google-map-search-btn"
-  );
 
+  const googleMapSearchButton =
+    itemElement.querySelector(
+      ".v2-google-map-search-btn"
+    );
+
+  // 시간 저장
   if (timeInput) {
-  timeInput.addEventListener(
-    "change",
-    async () => {
-      const normalizedTime =
-        normalizeTimeInput(timeInput.value);
+    timeInput.addEventListener(
+      "change",
+      async () => {
+        const normalizedTime =
+          normalizeTimeInput(
+            timeInput.value
+          );
 
-      timeInput.value = normalizedTime;
+        if (normalizedTime === null) {
+          window.alert(
+            "시간 형식이 올바르지 않습니다.\n예: 09:30 또는 1430"
+          );
 
-      await set(
-        ref(db, `${itemPath}/time`),
-        normalizedTime
-      );
+          timeInput.focus();
 
-      console.log(
-        `✅ ${dayId}/${itemId} 시간 저장 및 자동 정렬`
-      );
-    }
-  );
+          return;
+        }
 
-  timeInput.addEventListener(
-    "blur",
-    async () => {
-      const normalizedTime =
-        normalizeTimeInput(timeInput.value);
+        timeInput.value =
+          normalizedTime;
 
-      if (timeInput.value !== normalizedTime) {
-        timeInput.value = normalizedTime;
+        try {
+          await set(
+            ref(
+              db,
+              `${itemPath}/time`
+            ),
+            normalizedTime
+          );
 
-        await set(
-          ref(db, `${itemPath}/time`),
-          normalizedTime
-        );
+          console.log(
+            `✅ ${dayId}/${itemId} 시간 저장 및 자동 정렬 완료`
+          );
+        } catch (error) {
+          console.error(
+            "❌ 시간 저장 실패",
+            error
+          );
+
+          window.alert(
+            "시간을 저장하지 못했습니다."
+          );
+        }
       }
-    }
-  );
-// 일반 일정 장소를 구글지도에서 검색
-if (googleMapSearchButton) {
-  googleMapSearchButton.addEventListener(
-    "click",
-    () => {
-      const currentPlaceName =
-        nameElement?.innerText.trim() || "";
-
-      if (!currentPlaceName) {
-        window.alert(
-          "먼저 일정 제목에 검색할 장소명을 입력해 주세요."
-        );
-
-        nameElement?.focus();
-        return;
-      }
-
-      const searchUrl =
-        `https://www.google.com/maps/search/?api=1&query=${
-          encodeURIComponent(currentPlaceName)
-        }`;
-
-      window.open(
-        searchUrl,
-        "_blank",
-        "noopener,noreferrer"
-      );
-    }
-  );
-}
-}
-// =========================================
-// 시간 입력 형식 자동 보정
-// 9:30 → 09:30
-// 930 → 09:30
-// 1430 → 14:30
-// =========================================
-
-function normalizeTimeInput(value) {
-  const text = String(value || "").trim();
-
-  if (!text) {
-    return "";
+    );
   }
 
-  // 930 → 09:30
-  if (/^\d{3}$/.test(text)) {
-    const hour = Number(text.slice(0, 1));
-    const minute = Number(text.slice(1));
-
-    if (
-      hour >= 0 &&
-      hour <= 23 &&
-      minute >= 0 &&
-      minute <= 59
-    ) {
-      return `${String(hour).padStart(2, "0")}:${String(
-        minute
-      ).padStart(2, "0")}`;
-    }
-  }
-
-  // 1430 → 14:30
-  if (/^\d{4}$/.test(text)) {
-    const hour = Number(text.slice(0, 2));
-    const minute = Number(text.slice(2));
-
-    if (
-      hour >= 0 &&
-      hour <= 23 &&
-      minute >= 0 &&
-      minute <= 59
-    ) {
-      return `${String(hour).padStart(2, "0")}:${String(
-        minute
-      ).padStart(2, "0")}`;
-    }
-  }
-
-  const normalized = text.replace(".", ":");
-  const match = normalized.match(
-    /^(\d{1,2}):(\d{1,2})$/
-  );
-
-  if (!match) {
-    return text;
-  }
-
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-
-  if (
-    hour < 0 ||
-    hour > 23 ||
-    minute < 0 ||
-    minute > 59
-  ) {
-    return text;
-  }
-
-  return `${String(hour).padStart(2, "0")}:${String(
-    minute
-  ).padStart(2, "0")}`;
-}
-
+  // 제목 저장
   if (nameElement) {
     nameElement.addEventListener(
       "blur",
       async () => {
-        await set(
-          ref(db, `${itemPath}/name`),
-          nameElement.innerText.trim()
-        );
+        try {
+          await set(
+            ref(
+              db,
+              `${itemPath}/name`
+            ),
+            nameElement.innerText.trim()
+          );
+
+          console.log(
+            `✅ ${dayId}/${itemId} 제목 저장 완료`
+          );
+        } catch (error) {
+          console.error(
+            "❌ 제목 저장 실패",
+            error
+          );
+        }
       }
     );
   }
 
+  // 설명 저장
   if (descriptionElement) {
     descriptionElement.addEventListener(
       "blur",
       async () => {
-        await set(
-          ref(
-            db,
-            `${itemPath}/descriptionHtml`
-          ),
-          descriptionElement.innerHTML.trim()
-        );
+        try {
+          await set(
+            ref(
+              db,
+              `${itemPath}/descriptionHtml`
+            ),
+            descriptionElement
+              .innerHTML
+              .trim()
+          );
+
+          console.log(
+            `✅ ${dayId}/${itemId} 설명 저장 완료`
+          );
+        } catch (error) {
+          console.error(
+            "❌ 설명 저장 실패",
+            error
+          );
+        }
       }
     );
   }
 
+  // 경비 저장
   if (budgetInput) {
     budgetInput.addEventListener(
       "change",
       async () => {
         const budget =
-          Number(budgetInput.value) || 0;
+          Number(
+            budgetInput.value
+          ) || 0;
 
-        await set(
-          ref(db, `${itemPath}/budget`),
-          budget
-        );
+        try {
+          await set(
+            ref(
+              db,
+              `${itemPath}/budget`
+            ),
+            budget
+          );
 
-        calculateDayBudget(dayId);
+          calculateDayBudget(
+            dayId
+          );
+
+          console.log(
+            `✅ ${dayId}/${itemId} 경비 저장 완료`
+          );
+        } catch (error) {
+          console.error(
+            "❌ 경비 저장 실패",
+            error
+          );
+        }
       }
     );
   }
 
+  // 식사·간식 종류 변경
   if (gourmetType) {
     gourmetType.addEventListener(
       "change",
       async () => {
-        await set(
-          ref(
-            db,
-            `${itemPath}/selectedType`
-          ),
-          gourmetType.value
-        );
+        try {
+          await set(
+            ref(
+              db,
+              `${itemPath}/selectedType`
+            ),
+            gourmetType.value
+          );
 
-        await set(
-          ref(
-            db,
-            `${itemPath}/selectedPlaceId`
-          ),
-          ""
-        );
+          // 종류가 바뀌면 기존 장소 선택 초기화
+          await set(
+            ref(
+              db,
+              `${itemPath}/selectedPlaceId`
+            ),
+            ""
+          );
+
+          console.log(
+            `✅ ${dayId}/${itemId} 종류 변경 완료`
+          );
+        } catch (error) {
+          console.error(
+            "❌ 식사·간식 종류 저장 실패",
+            error
+          );
+        }
       }
     );
   }
 
+  // 식사·간식 장소 선택
   if (placeSelect) {
     placeSelect.addEventListener(
       "change",
       async () => {
-        await set(
-          ref(
-            db,
-            `${itemPath}/selectedPlaceId`
-          ),
-          placeSelect.value
+        try {
+          await set(
+            ref(
+              db,
+              `${itemPath}/selectedPlaceId`
+            ),
+            placeSelect.value
+          );
+
+          console.log(
+            `✅ ${dayId}/${itemId} 장소 선택 저장 완료`
+          );
+        } catch (error) {
+          console.error(
+            "❌ 장소 선택 저장 실패",
+            error
+          );
+        }
+      }
+    );
+  }
+
+  // 구글지도 검색
+  if (googleMapSearchButton) {
+    googleMapSearchButton.addEventListener(
+      "click",
+      () => {
+        const currentPlaceName =
+          nameElement
+            ?.innerText
+            .trim() || "";
+
+        if (!currentPlaceName) {
+          window.alert(
+            "먼저 일정 제목에 검색할 장소명을 입력해 주세요."
+          );
+
+          nameElement?.focus();
+
+          return;
+        }
+
+        const searchUrl =
+          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            currentPlaceName
+          )}`;
+
+        window.open(
+          searchUrl,
+          "_blank",
+          "noopener,noreferrer"
         );
       }
     );
@@ -985,7 +1244,9 @@ function bindItemDelete(
       ".v2-delete-item-btn"
     );
 
-  if (!button) return;
+  if (!button) {
+    return;
+  }
 
   button.addEventListener(
     "click",
@@ -996,17 +1257,22 @@ function bindItemDelete(
       const itemName =
         itemElement
           .querySelector(".spot-name")
-          ?.innerText.trim() ||
+          ?.innerText
+          .trim() ||
         "선택한 일정";
 
-      const confirmed = window.confirm(
-        `「${itemName}」 항목을 삭제하시겠습니까?\n삭제한 데이터는 복구할 수 없습니다.`
-      );
+      const confirmed =
+        window.confirm(
+          `「${itemName}」 항목을 삭제하시겠습니까?\n삭제한 데이터는 복구할 수 없습니다.`
+        );
 
-      if (!confirmed) return;
+      if (!confirmed) {
+        return;
+      }
 
       button.disabled = true;
-      button.textContent = "삭제 중...";
+      button.textContent =
+        "삭제 중...";
 
       try {
         await remove(
@@ -1015,15 +1281,23 @@ function bindItemDelete(
             `${tripBasePath}/days/${dayId}/items/${itemId}`
           )
         );
+
+        console.log(
+          `✅ ${dayId}/${itemId} 삭제 완료`
+        );
       } catch (error) {
-        console.error(error);
+        console.error(
+          "❌ 일정 삭제 실패",
+          error
+        );
 
         window.alert(
           "일정을 삭제하지 못했습니다."
         );
 
         button.disabled = false;
-        button.textContent = "🗑️ 삭제";
+        button.textContent =
+          "🗑️ 삭제";
       }
     }
   );
@@ -1033,16 +1307,17 @@ function bindItemDelete(
 // 일정 추가
 // =========================================
 
-async function addNewItem(dayId, section) {
-  const typeSelect = section.querySelector(
-    ".v2-new-item-type"
-  );
-
-  if (!typeSelect) {
-    console.error(
-      "❌ 일정 종류 선택창을 찾지 못했습니다."
+async function addNewItem(
+  dayId,
+  section,
+  addButton
+) {
+  const typeSelect =
+    section.querySelector(
+      ".v2-new-item-type"
     );
 
+  if (!typeSelect) {
     window.alert(
       "일정 종류 선택창을 찾지 못했습니다."
     );
@@ -1050,132 +1325,52 @@ async function addNewItem(dayId, section) {
     return;
   }
 
-  const selectedType = typeSelect.value;
+  const selectedType =
+    typeSelect.value;
 
-  // -----------------------------------------
-  // 시간 입력
-  // -----------------------------------------
-  const enteredTime = window.prompt(
-    "추가할 시간을 입력해 주세요.\n예: 09:30 또는 1430",
-    ""
-  );
+  // 시간 입력 팝업
+  const enteredTime =
+    window.prompt(
+      "추가할 시간을 입력해 주세요.\n예: 09:30 또는 1430",
+      ""
+    );
 
   // 취소 버튼을 누른 경우
   if (enteredTime === null) {
     return;
   }
 
-  // -----------------------------------------
-  // 시간 형식 변환
-  // 이 함수 안에서 직접 처리하므로
-  // normalizeTimeInput 외부 함수가 없어도 작동합니다.
-  // -----------------------------------------
-  const rawTime = String(enteredTime).trim();
-
-  let normalizedTime = "";
-
-  if (rawTime === "") {
-    normalizedTime = "";
-  } else if (/^\d{3}$/.test(rawTime)) {
-    // 930 → 09:30
-    const hour = Number(rawTime.slice(0, 1));
-    const minute = Number(rawTime.slice(1));
-
-    if (
-      hour < 0 ||
-      hour > 23 ||
-      minute < 0 ||
-      minute > 59
-    ) {
-      window.alert(
-        "시간 형식이 올바르지 않습니다.\n예: 09:30"
-      );
-
-      return;
-    }
-
-    normalizedTime =
-      `${String(hour).padStart(2, "0")}:` +
-      `${String(minute).padStart(2, "0")}`;
-  } else if (/^\d{4}$/.test(rawTime)) {
-    // 1430 → 14:30
-    const hour = Number(rawTime.slice(0, 2));
-    const minute = Number(rawTime.slice(2));
-
-    if (
-      hour < 0 ||
-      hour > 23 ||
-      minute < 0 ||
-      minute > 59
-    ) {
-      window.alert(
-        "시간 형식이 올바르지 않습니다.\n예: 09:30"
-      );
-
-      return;
-    }
-
-    normalizedTime =
-      `${String(hour).padStart(2, "0")}:` +
-      `${String(minute).padStart(2, "0")}`;
-  } else {
-    // 9:30, 09:30, 9.30 처리
-    const convertedTime = rawTime.replace(".", ":");
-
-    const match = convertedTime.match(
-      /^(\d{1,2}):(\d{1,2})$/
+  const normalizedTime =
+    normalizeTimeInput(
+      enteredTime
     );
 
-    if (!match) {
-      window.alert(
-        "시간 형식이 올바르지 않습니다.\n예: 09:30 또는 1430"
-      );
+  if (normalizedTime === null) {
+    window.alert(
+      "시간 형식이 올바르지 않습니다.\n예: 09:30 또는 1430"
+    );
 
-      return;
-    }
-
-    const hour = Number(match[1]);
-    const minute = Number(match[2]);
-
-    if (
-      hour < 0 ||
-      hour > 23 ||
-      minute < 0 ||
-      minute > 59
-    ) {
-      window.alert(
-        "시간 형식이 올바르지 않습니다.\n예: 09:30"
-      );
-
-      return;
-    }
-
-    normalizedTime =
-      `${String(hour).padStart(2, "0")}:` +
-      `${String(minute).padStart(2, "0")}`;
+    return;
   }
 
-  // -----------------------------------------
-  // 현재 일차의 기존 일정 확인
-  // -----------------------------------------
-  const dayData = currentDays[dayId] || {};
-  const existingItems = Object.values(
-    dayData.items || {}
-  );
+  const dayData =
+    currentDays[dayId] || {};
 
-  const highestOrder = existingItems.reduce(
-    (maximum, item) => {
-      return Math.max(
-        maximum,
-        Number(item.order) || 0
-      );
-    },
-    0
-  );
+  const existingItems =
+    Object.values(
+      dayData.items || {}
+    );
 
-  // -----------------------------------------
-  // 종류별 기본 이름
-  // -----------------------------------------
+  const highestOrder =
+    existingItems.reduce(
+      (maximum, item) =>
+        Math.max(
+          maximum,
+          Number(item.order) || 0
+        ),
+      0
+    );
+
   const defaultNames = {
     place: "새 일정",
     meal: "🍽️ 식사",
@@ -1202,51 +1397,68 @@ async function addNewItem(dayId, section) {
 
   // 식사
   if (selectedType === "meal") {
-    newItem.selectedType = "식사";
-    newItem.selectedPlaceId = "";
+    newItem.selectedType =
+      "식사";
+
+    newItem.selectedPlaceId =
+      "";
   }
 
   // 간식
   if (selectedType === "snack") {
-    newItem.selectedType = "간식";
-    newItem.selectedPlaceId = "";
+    newItem.selectedType =
+      "간식";
+
+    newItem.selectedPlaceId =
+      "";
   }
 
-  // -----------------------------------------
-  // Firebase 저장
-  // -----------------------------------------
   const itemsPath =
     `${tripBasePath}/days/${dayId}/items`;
 
-  console.log(
-    "Firebase 저장 경로:",
-    itemsPath
-  );
+  if (addButton) {
+    addButton.disabled = true;
 
-  console.log(
-    "Firebase 저장 데이터:",
-    newItem
-  );
+    addButton.textContent =
+      "추가 중...";
+  }
 
   try {
-    const newItemRef = push(
-      ref(db, itemsPath)
+    const newItemRef =
+      push(
+        ref(
+          db,
+          itemsPath
+        )
+      );
+
+    await set(
+      newItemRef,
+      newItem
     );
 
-    await set(newItemRef, newItem);
-
     console.log(
-      `✅ ${dayId}에 ${normalizedTime || "시간 미지정"} 항목 추가 완료`
+      `✅ ${dayId}에 ${
+        normalizedTime ||
+        "시간 미지정"
+      } 항목 추가 완료`
     );
   } catch (error) {
     console.error(
-      "❌ 일정 추가 중 Firebase 오류:",
+      "❌ 일정 추가 실패",
       error
     );
 
     window.alert(
-      "일정을 추가하지 못했습니다.\n브라우저 콘솔의 오류를 확인해 주세요."
+      "일정을 추가하지 못했습니다.\n인터넷 연결과 Firebase 권한을 확인해 주세요."
     );
+  } finally {
+    if (addButton) {
+      addButton.disabled = false;
+
+      addButton.textContent =
+        "➕ 시간대별 항목 추가";
+    }
   }
 }
 
@@ -1269,22 +1481,23 @@ if (addDayButton) {
 async function addNewDay() {
   const days = getSortedDays();
 
-  const highestOrder = days.reduce(
-    (maximum, day) =>
-      Math.max(
-        maximum,
-        Number(day.order) || 0
-      ),
-    0
-  );
+  const highestOrder =
+    days.reduce(
+      (maximum, day) =>
+        Math.max(
+          maximum,
+          Number(day.order) || 0
+        ),
+      0
+    );
 
-  const nextOrder = highestOrder + 1;
-  const newDayId = `day${nextOrder}`;
+  const nextOrder =
+    highestOrder + 1;
 
-  const alreadyExists =
-    currentDays[newDayId];
+  const newDayId =
+    `day${nextOrder}`;
 
-  if (alreadyExists) {
+  if (currentDays[newDayId]) {
     window.alert(
       `${nextOrder}일차가 이미 존재합니다.`
     );
@@ -1292,9 +1505,12 @@ async function addNewDay() {
     return;
   }
 
-  addDayButton.disabled = true;
-  addDayButton.textContent =
-    "추가 중...";
+  if (addDayButton) {
+    addDayButton.disabled = true;
+
+    addDayButton.textContent =
+      "추가 중...";
+  }
 
   try {
     await set(
@@ -1304,7 +1520,10 @@ async function addNewDay() {
       ),
       {
         order: nextOrder,
-        title: `▶ ${nextOrder}일차: 새 여행 일정`,
+
+        title:
+          `▶ ${nextOrder}일차: 새 여행 일정`,
+
         createdAt:
           new Date().toISOString(),
 
@@ -1314,8 +1533,10 @@ async function addNewDay() {
             type: "place",
             time: "",
             name: "새 일정",
+
             descriptionHtml:
               "이곳을 눌러 이동경로와 설명을 입력하세요.",
+
             budget: 0,
             mapLink: ""
           }
@@ -1323,17 +1544,28 @@ async function addNewDay() {
       }
     );
 
-    activeDayId = newDayId;
+    activeDayId =
+      newDayId;
+
+    console.log(
+      `✅ ${nextOrder}일차 추가 완료`
+    );
   } catch (error) {
-    console.error(error);
+    console.error(
+      "❌ 새 일차 추가 실패",
+      error
+    );
 
     window.alert(
       "새 일차를 추가하지 못했습니다."
     );
   } finally {
-    addDayButton.disabled = false;
-    addDayButton.textContent =
-      "➕ 일차 추가";
+    if (addDayButton) {
+      addDayButton.disabled = false;
+
+      addDayButton.textContent =
+        "➕ 일차 추가";
+    }
   }
 }
 
@@ -1342,9 +1574,12 @@ async function addNewDay() {
 // =========================================
 
 async function deleteDay(dayId) {
-  const day = currentDays[dayId];
+  const day =
+    currentDays[dayId];
 
-  if (!day) return;
+  if (!day) {
+    return;
+  }
 
   const dayNumber =
     Number(day.order) || 0;
@@ -1357,11 +1592,14 @@ async function deleteDay(dayId) {
     return;
   }
 
-  const confirmed = window.confirm(
-    `${dayNumber}일차 전체를 삭제하시겠습니까?\n해당 일차의 모든 일정도 함께 삭제됩니다.`
-  );
+  const confirmed =
+    window.confirm(
+      `${dayNumber}일차 전체를 삭제하시겠습니까?\n해당 일차의 모든 일정도 함께 삭제됩니다.`
+    );
 
-  if (!confirmed) return;
+  if (!confirmed) {
+    return;
+  }
 
   try {
     await remove(
@@ -1374,8 +1612,15 @@ async function deleteDay(dayId) {
     activeDayId = null;
 
     await reorderDays();
+
+    console.log(
+      `✅ ${dayNumber}일차 삭제 완료`
+    );
   } catch (error) {
-    console.error(error);
+    console.error(
+      "❌ 일차 삭제 실패",
+      error
+    );
 
     window.alert(
       "일차를 삭제하지 못했습니다."
@@ -1388,15 +1633,19 @@ async function deleteDay(dayId) {
 // =========================================
 
 async function reorderDays() {
-  const snapshotDays = getSortedDays();
+  const snapshotDays =
+    getSortedDays();
 
   for (
     let index = 0;
     index < snapshotDays.length;
     index += 1
   ) {
-    const day = snapshotDays[index];
-    const newOrder = index + 1;
+    const day =
+      snapshotDays[index];
+
+    const newOrder =
+      index + 1;
 
     await set(
       ref(
@@ -1415,10 +1664,14 @@ async function reorderDays() {
 function calculateDayBudget(dayId) {
   const section =
     document.querySelector(
-      `.v2-day-section[data-day-id="${CSS.escape(dayId)}"]`
+      `.v2-day-section[data-day-id="${CSS.escape(
+        dayId
+      )}"]`
     );
 
-  if (!section) return;
+  if (!section) {
+    return;
+  }
 
   const inputs =
     section.querySelectorAll(
@@ -1428,7 +1681,8 @@ function calculateDayBudget(dayId) {
   let total = 0;
 
   inputs.forEach((input) => {
-    total += Number(input.value) || 0;
+    total +=
+      Number(input.value) || 0;
   });
 
   const totalElement =
@@ -1456,7 +1710,8 @@ function calculateTravelTotalBudget() {
       ".v2-budget-input"
     )
     .forEach((input) => {
-      total += Number(input.value) || 0;
+      total +=
+        Number(input.value) || 0;
     });
 
   const totalElement =
@@ -1476,7 +1731,9 @@ function calculateTravelTotalBudget() {
 
 function refreshAllPlaceDropdowns() {
   document
-    .querySelectorAll(".v2-item-place")
+    .querySelectorAll(
+      ".v2-item-place"
+    )
     .forEach((selectElement) => {
       const itemElement =
         selectElement.closest(
@@ -1489,17 +1746,21 @@ function refreshAllPlaceDropdowns() {
         );
 
       const selectedType =
-        typeSelect?.value || "식사";
+        typeSelect?.value ||
+        "식사";
 
       const selectedPlaceId =
         selectElement.dataset
-          .selectedPlaceId || "";
+          .selectedPlaceId ||
+        "";
 
       const filteredItems =
         gourmetItems.filter(
           (item) =>
-            (item.shopType || "식사") ===
-            selectedType
+            (
+              item.shopType ||
+              "식사"
+            ) === selectedType
         );
 
       selectElement.innerHTML = `
@@ -1513,13 +1774,15 @@ function refreshAllPlaceDropdowns() {
               <option
                 value="${escapeHtml(item.id)}"
                 ${
-                  item.id === selectedPlaceId
+                  item.id ===
+                  selectedPlaceId
                     ? "selected"
                     : ""
                 }
               >
                 ${escapeHtml(
-                  item.shopName || "이름 없음"
+                  item.shopName ||
+                  "이름 없음"
                 )}
               </option>
             `
