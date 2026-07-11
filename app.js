@@ -176,6 +176,22 @@ function getSelectedPlaceId(selection) {
 }
 
 // =========================================
+// gourmet_guide에서 가게 정보 찾기
+// =========================================
+
+function getGourmetItemById(placeId) {
+  if (!placeId) {
+    return null;
+  }
+
+  return (
+    gourmetItems.find(
+      (item) => item.id === placeId
+    ) || null
+  );
+}
+
+// =========================================
 // 여행 기본정보
 // =========================================
 
@@ -807,9 +823,7 @@ function createPlaceItemHtml(
 // 식사·간식 선택행 HTML
 // =========================================
 
-function createGourmetSelectionRows(
-  item
-) {
+function createGourmetSelectionRows(item) {
   const rows = [];
 
   // 기존 단일 선택 데이터 호환
@@ -821,7 +835,7 @@ function createGourmetSelectionRows(
     });
   }
 
-  // 동적 다중 선택 데이터
+  // 새로운 다중 선택 데이터
   Object.entries(
     item.selectedItems || {}
   ).forEach(
@@ -829,9 +843,7 @@ function createGourmetSelectionRows(
       rows.push({
         selectionId,
         placeId:
-          getSelectedPlaceId(
-            selection
-          ),
+          getSelectedPlaceId(selection),
         isLegacy: false
       });
     }
@@ -846,40 +858,85 @@ function createGourmetSelectionRows(
   }
 
   return rows
-    .map((row) => `
-      <div
-        class="v2-gourmet-selection-row"
-        data-selection-id="${escapeHtml(
-          row.selectionId
-        )}"
-        data-is-legacy="${
-          row.isLegacy
-            ? "true"
-            : "false"
-        }"
-      >
+    .map((row) => {
+      const selectedShop =
+        getGourmetItemById(
+          row.placeId
+        );
 
-        <select
-          class="rest-select v2-dynamic-gourmet-select"
-          data-selected-place-id="${escapeHtml(
-            row.placeId
+      const shopName =
+        selectedShop?.shopName ||
+        "";
+
+      const shopMemo =
+        selectedShop?.shopMemo ||
+        "";
+
+      const selectedInfoHtml =
+        row.placeId
+          ? `
+            <div class="v2-selected-gourmet-info">
+              <div class="v2-selected-gourmet-name">
+                ${escapeHtml(
+                  shopName ||
+                  "등록 정보를 찾을 수 없습니다."
+                )}
+              </div>
+
+              ${
+                shopMemo
+                  ? `
+                    <div class="v2-selected-gourmet-memo">
+                      ${escapeHtml(shopMemo)}
+                    </div>
+                  `
+                  : `
+                    <div class="v2-selected-gourmet-memo empty">
+                      등록된 간단메모가 없습니다.
+                    </div>
+                  `
+              }
+            </div>
+          `
+          : "";
+
+      return `
+        <div
+          class="v2-gourmet-selection-row"
+          data-selection-id="${escapeHtml(
+            row.selectionId
           )}"
+          data-is-legacy="${
+            row.isLegacy
+              ? "true"
+              : "false"
+          }"
         >
-          <option value="">
-            -- 장소 선택 --
-          </option>
-        </select>
+          <div class="v2-gourmet-selection-main">
+            <select
+              class="rest-select v2-dynamic-gourmet-select"
+              data-selected-place-id="${escapeHtml(
+                row.placeId
+              )}"
+            >
+              <option value="">
+                -- 장소 선택 --
+              </option>
+            </select>
 
-        <button
-          type="button"
-          class="mini-del-btn v2-delete-gourmet-selection-btn"
-          title="이 선택 삭제"
-        >
-          ✕
-        </button>
+            <button
+              type="button"
+              class="mini-del-btn v2-delete-gourmet-selection-btn"
+              title="이 선택 삭제"
+            >
+              ✕
+            </button>
+          </div>
 
-      </div>
-    `)
+          ${selectedInfoHtml}
+        </div>
+      `;
+    })
     .join("");
 }
 
@@ -1415,38 +1472,49 @@ function bindGourmetSelectionEvents(
         "true";
 
       selectElement.addEventListener(
-        "change",
-        async () => {
-          try {
-            if (isLegacy) {
-              await set(
-                ref(
-                  db,
-                  `${tripBasePath}/days/${dayId}/items/${itemId}/selectedPlaceId`
-                ),
-                selectElement.value
-              );
-            } else {
-              await set(
-                ref(
-                  db,
-                  `${tripBasePath}/days/${dayId}/items/${itemId}/selectedItems/${selectionId}/placeId`
-                ),
-                selectElement.value
-              );
-            }
-          } catch (error) {
-            console.error(
-              "❌ 식사·간식 장소 저장 실패",
-              error
-            );
+  "change",
+  async () => {
+    const selectedPlaceId =
+      selectElement.value;
 
-            window.alert(
-              "장소 선택을 저장하지 못했습니다."
-            );
-          }
-        }
+    selectElement.dataset
+      .selectedPlaceId =
+      selectedPlaceId;
+
+    try {
+      if (isLegacy) {
+        await set(
+          ref(
+            db,
+            `${tripBasePath}/days/${dayId}/items/${itemId}/selectedPlaceId`
+          ),
+          selectedPlaceId
+        );
+      } else {
+        await set(
+          ref(
+            db,
+            `${tripBasePath}/days/${dayId}/items/${itemId}/selectedItems/${selectionId}/placeId`
+          ),
+          selectedPlaceId
+        );
+      }
+
+      console.log(
+        "✅ 식사·간식 장소 선택 저장 완료"
       );
+    } catch (error) {
+      console.error(
+        "❌ 식사·간식 장소 저장 실패",
+        error
+      );
+
+      window.alert(
+        "장소 선택을 저장하지 못했습니다."
+      );
+    }
+  }
+);
     });
 
   itemElement
@@ -2062,6 +2130,7 @@ function refreshAllGourmetDropdowns() {
       `;
     });
 }
+
 // =========================================
 // 맛집·간식 관리 탭 복원
 // =========================================

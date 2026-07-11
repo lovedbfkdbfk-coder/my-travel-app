@@ -364,6 +364,75 @@
     border-color: #CBD5E0;
     cursor: not-allowed;
 }
+/* =========================================
+   식사·간식 선택 결과 표시
+========================================= */
+
+.v2-gourmet-selection-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    background-color: rgba(255,255,255,0.55);
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+}
+
+.v2-gourmet-selection-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.v2-gourmet-selection-main .rest-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.v2-selected-gourmet-info {
+    background-color: #FFFFFF;
+    border-left: 4px solid #DD6B20;
+    border-radius: 6px;
+    padding: 8px 10px;
+    line-height: 1.4;
+}
+
+.snack-box .v2-selected-gourmet-info {
+    border-left-color: #D69E2E;
+    background-color: #FFFFF0;
+}
+
+.v2-selected-gourmet-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #2D3748;
+}
+
+.v2-selected-gourmet-memo {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #4A5568;
+}
+
+.v2-selected-gourmet-memo.empty {
+    color: #A0AEC0;
+    font-style: italic;
+}
+
+.v2-delete-gourmet-selection-btn {
+    flex: none;
+    background-color: #FFF5F5;
+    color: #E53E3E;
+    border: 1px solid #FEB2B2;
+    border-radius: 6px;
+    padding: 5px 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.v2-delete-gourmet-selection-btn:hover {
+    background-color: #FED7D7;
+}
     </style>
 </head>
 <body>
