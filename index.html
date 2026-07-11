@@ -206,6 +206,51 @@
     background-color: #A0AEC0;
     cursor: not-allowed;
 }    
+    /* =========================================
+   일반 일정 제목 + 구글지도 검색
+========================================= */
+
+.v2-place-title-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+}
+
+.v2-place-title-row .spot-name {
+    flex: 1;
+    min-width: 140px;
+}
+
+.v2-google-map-search-btn {
+    flex: none;
+    background-color: #4285F4;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 16px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(66, 133, 244, 0.25);
+}
+
+.v2-google-map-search-btn:hover {
+    background-color: #3367D6;
+}
+
+.v2-google-map-search-btn:active {
+    transform: translateY(1px);
+}
+
+@media (max-width: 480px) {
+    .v2-google-map-search-btn {
+        padding: 5px 8px;
+        font-size: 0.72rem;
+    }
+}
     </style>
 </head>
 <body>

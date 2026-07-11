@@ -32,7 +32,65 @@ function escapeHtml(value = "") {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+// =========================================
+// 일정 시간을 분 단위 숫자로 변환
+// 예: 09:30 → 570분
+// =========================================
 
+function timeToMinutes(timeValue) {
+  if (!timeValue) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  const normalizedTime = String(timeValue)
+    .trim()
+    .replace(".", ":");
+
+  const match = normalizedTime.match(
+    /^(\d{1,2}):(\d{1,2})$/
+  );
+
+  if (!match) {
+    // 시간이 없거나 형식이 잘못된 일정은 맨 아래로 보냅니다.
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+
+  if (
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return hour * 60 + minute;
+}
+
+// =========================================
+// 일정 항목 시간순 정렬
+// 시간이 같으면 기존 order 순서를 사용
+// =========================================
+
+function sortItemsByTime(items) {
+  return [...items].sort((a, b) => {
+    const timeDifference =
+      timeToMinutes(a.time) -
+      timeToMinutes(b.time);
+
+    if (timeDifference !== 0) {
+      return timeDifference;
+    }
+
+    return (
+      (Number(a.order) || 0) -
+      (Number(b.order) || 0)
+    );
+  });
+}
 // =========================================
 // 여행 기본정보 출력
 // =========================================
@@ -339,16 +397,13 @@ function createDaySectionHtml(day) {
   const activeClass =
     dayId === activeDayId ? "active" : "";
 
-  const items = Object.entries(day.items || {})
+  const items = sortItemsByTime(
+  Object.entries(day.items || {})
     .map(([id, item]) => ({
       id,
       ...item
     }))
-    .sort(
-      (a, b) =>
-        (Number(a.order) || 0) -
-        (Number(b.order) || 0)
-    );
+);
 
   const itemsHtml = items
     .map((item) =>
@@ -460,12 +515,22 @@ function createItemHtml(dayId, item) {
           value="${escapeHtml(item.time || "")}"
         >
 
-        <div
-          class="spot-name"
-          contenteditable="true"
-        >
-          ${item.name || ""}
-        </div>
+        <div class="v2-place-title-row">
+  <div
+    class="spot-name"
+    contenteditable="true"
+  >
+    ${item.name || ""}
+  </div>
+
+  <button
+    type="button"
+    class="v2-google-map-search-btn"
+    title="이 장소를 구글지도에서 검색"
+  >
+    🗺️ 지도검색
+  </button>
+</div>
 
         <div
           class="route-box"
@@ -678,18 +743,151 @@ function bindItemEditing(
     itemElement.querySelector(
       ".v2-item-place"
     );
+    const googleMapSearchButton =
+  itemElement.querySelector(
+    ".v2-google-map-search-btn"
+  );
 
   if (timeInput) {
-    timeInput.addEventListener(
-      "change",
-      async () => {
+  timeInput.addEventListener(
+    "change",
+    async () => {
+      const normalizedTime =
+        normalizeTimeInput(timeInput.value);
+
+      timeInput.value = normalizedTime;
+
+      await set(
+        ref(db, `${itemPath}/time`),
+        normalizedTime
+      );
+
+      console.log(
+        `✅ ${dayId}/${itemId} 시간 저장 및 자동 정렬`
+      );
+    }
+  );
+
+  timeInput.addEventListener(
+    "blur",
+    async () => {
+      const normalizedTime =
+        normalizeTimeInput(timeInput.value);
+
+      if (timeInput.value !== normalizedTime) {
+        timeInput.value = normalizedTime;
+
         await set(
           ref(db, `${itemPath}/time`),
-          timeInput.value
+          normalizedTime
         );
       }
-    );
+    }
+  );
+// 일반 일정 장소를 구글지도에서 검색
+if (googleMapSearchButton) {
+  googleMapSearchButton.addEventListener(
+    "click",
+    () => {
+      const currentPlaceName =
+        nameElement?.innerText.trim() || "";
+
+      if (!currentPlaceName) {
+        window.alert(
+          "먼저 일정 제목에 검색할 장소명을 입력해 주세요."
+        );
+
+        nameElement?.focus();
+        return;
+      }
+
+      const searchUrl =
+        `https://www.google.com/maps/search/?api=1&query=${
+          encodeURIComponent(currentPlaceName)
+        }`;
+
+      window.open(
+        searchUrl,
+        "_blank",
+        "noopener,noreferrer"
+      );
+    }
+  );
+}
+}
+// =========================================
+// 시간 입력 형식 자동 보정
+// 9:30 → 09:30
+// 930 → 09:30
+// 1430 → 14:30
+// =========================================
+
+function normalizeTimeInput(value) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return "";
   }
+
+  // 930 → 09:30
+  if (/^\d{3}$/.test(text)) {
+    const hour = Number(text.slice(0, 1));
+    const minute = Number(text.slice(1));
+
+    if (
+      hour >= 0 &&
+      hour <= 23 &&
+      minute >= 0 &&
+      minute <= 59
+    ) {
+      return `${String(hour).padStart(2, "0")}:${String(
+        minute
+      ).padStart(2, "0")}`;
+    }
+  }
+
+  // 1430 → 14:30
+  if (/^\d{4}$/.test(text)) {
+    const hour = Number(text.slice(0, 2));
+    const minute = Number(text.slice(2));
+
+    if (
+      hour >= 0 &&
+      hour <= 23 &&
+      minute >= 0 &&
+      minute <= 59
+    ) {
+      return `${String(hour).padStart(2, "0")}:${String(
+        minute
+      ).padStart(2, "0")}`;
+    }
+  }
+
+  const normalized = text.replace(".", ":");
+  const match = normalized.match(
+    /^(\d{1,2}):(\d{1,2})$/
+  );
+
+  if (!match) {
+    return text;
+  }
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+
+  if (
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return text;
+  }
+
+  return `${String(hour).padStart(2, "0")}:${String(
+    minute
+  ).padStart(2, "0")}`;
+}
 
   if (nameElement) {
     nameElement.addEventListener(
@@ -847,7 +1045,29 @@ async function addNewItem(
   if (!typeSelect) return;
 
   const selectedType = typeSelect.value;
+const enteredTime = window.prompt(
+  "추가할 시간을 입력해 주세요.\n예: 09:30 또는 1430",
+  ""
+);
 
+if (enteredTime === null) {
+  return;
+}
+
+const normalizedTime =
+  normalizeTimeInput(enteredTime);
+
+if (
+  normalizedTime &&
+  timeToMinutes(normalizedTime) ===
+    Number.MAX_SAFE_INTEGER
+) {
+  window.alert(
+    "시간 형식이 올바르지 않습니다.\n예: 09:30"
+  );
+
+  return;
+}
   const dayData = currentDays[dayId] || {};
 
   const items = Object.values(
@@ -872,7 +1092,7 @@ async function addNewItem(
   const newItem = {
     order: highestOrder + 1,
     type: selectedType,
-    time: "",
+    time: normalizedTime,
     name: defaultNames[selectedType],
     budget: 0
   };
