@@ -852,7 +852,7 @@ function createGourmetSelectionRows(item) {
   if (rows.length === 0) {
     return `
       <div class="v2-empty-gourmet-message">
-        아직 선택된 장소가 없습니다.
+        아직 등록된 장소가 없습니다.
       </div>
     `;
   }
@@ -866,39 +866,11 @@ function createGourmetSelectionRows(item) {
 
       const shopName =
         selectedShop?.shopName ||
-        "";
+        "등록 정보를 찾을 수 없습니다.";
 
       const shopMemo =
         selectedShop?.shopMemo ||
-        "";
-
-      const selectedInfoHtml =
-        row.placeId
-          ? `
-            <div class="v2-selected-gourmet-info">
-              <div class="v2-selected-gourmet-name">
-                ${escapeHtml(
-                  shopName ||
-                  "등록 정보를 찾을 수 없습니다."
-                )}
-              </div>
-
-              ${
-                shopMemo
-                  ? `
-                    <div class="v2-selected-gourmet-memo">
-                      ${escapeHtml(shopMemo)}
-                    </div>
-                  `
-                  : `
-                    <div class="v2-selected-gourmet-memo empty">
-                      등록된 간단메모가 없습니다.
-                    </div>
-                  `
-              }
-            </div>
-          `
-          : "";
+        "등록된 간단메모가 없습니다.";
 
       return `
         <div
@@ -912,28 +884,23 @@ function createGourmetSelectionRows(item) {
               : "false"
           }"
         >
-          <div class="v2-gourmet-selection-main">
-            <select
-              class="rest-select v2-dynamic-gourmet-select"
-              data-selected-place-id="${escapeHtml(
-                row.placeId
-              )}"
-            >
-              <option value="">
-                -- 장소 선택 --
-              </option>
-            </select>
+          <div class="v2-selected-gourmet-info">
+            <div class="v2-selected-gourmet-name">
+              ${escapeHtml(shopName)}
+            </div>
 
-            <button
-              type="button"
-              class="mini-del-btn v2-delete-gourmet-selection-btn"
-              title="이 선택 삭제"
-            >
-              ✕
-            </button>
+            <div class="v2-selected-gourmet-memo">
+              ${escapeHtml(shopMemo)}
+            </div>
           </div>
 
-          ${selectedInfoHtml}
+          <button
+            type="button"
+            class="v2-delete-gourmet-selection-btn"
+            title="등록된 장소 삭제"
+          >
+            삭제
+          </button>
         </div>
       `;
     })
@@ -963,9 +930,7 @@ function createGourmetItemHtml(
       : "🍽️ 식사";
 
   const selectionRowsHtml =
-    createGourmetSelectionRows(
-      item
-    );
+    createGourmetSelectionRows(item);
 
   return `
     <div
@@ -974,21 +939,22 @@ function createGourmetItemHtml(
       data-item-type="${escapeHtml(item.type)}"
       data-gourmet-type="${gourmetType}"
     >
-
       ${deleteButton}
 
-      <input
-        type="text"
-        class="time-input"
-        value="${escapeHtml(item.time || "")}"
-        placeholder="09:00"
-      >
+      <div class="v2-gourmet-item-header">
+        <input
+          type="text"
+          class="time-input"
+          value="${escapeHtml(item.time || "")}"
+          placeholder="09:00"
+        >
 
-      <div
-        class="spot-name v2-selectable-item-name"
-        contenteditable="true"
-      >
-        ${item.name || defaultName}
+        <div
+          class="spot-name v2-selectable-item-name"
+          contenteditable="true"
+        >
+          ${item.name || defaultName}
+        </div>
       </div>
 
       <div
@@ -998,34 +964,51 @@ function createGourmetItemHtml(
             : ""
         }"
       >
+        <div class="v2-gourmet-picker-row">
+          <div class="v2-gourmet-type-label">
+            ${
+              isSnack
+                ? "🍰 간식장소"
+                : "🍽️ 식당"
+            }
+          </div>
 
-        <div class="v2-gourmet-type-label">
-          ${
-            isSnack
-              ? "🍰 간식 장소"
-              : "🍽️ 식당"
-          }
+          <select
+            class="rest-select v2-gourmet-picker-select"
+          >
+            <option value="">
+              -- ${
+                isSnack
+                  ? "간식 장소 선택"
+                  : "식당 선택"
+              } --
+            </option>
+          </select>
+
+          <button
+            type="button"
+            class="v2-register-gourmet-btn"
+          >
+            등록
+          </button>
         </div>
 
-        <div class="v2-dynamic-gourmet-list">
-          ${selectionRowsHtml}
+        <div class="v2-selected-gourmet-section">
+          <div class="v2-selected-gourmet-heading">
+            선택된 ${
+              isSnack
+                ? "간식 장소"
+                : "식당"
+            }
+          </div>
+
+          <div class="v2-dynamic-gourmet-list">
+            ${selectionRowsHtml}
+          </div>
         </div>
-
-        <button
-          type="button"
-          class="v2-add-gourmet-selection-btn"
-        >
-          ➕ ${
-            isSnack
-              ? "간식 장소 추가"
-              : "식당 추가"
-          }
-        </button>
-
       </div>
 
       <div class="spot-budget-container">
-
         💰 경비:
 
         <input
@@ -1033,9 +1016,7 @@ function createGourmetItemHtml(
           class="spot-budget-input v2-budget-input"
           value="${Number(item.budget) || 0}"
         >
-
       </div>
-
     </div>
   `;
 }
@@ -1398,20 +1379,83 @@ function bindGourmetSelectionEvents(
     return;
   }
 
-  const addSelectionButton =
+  const pickerSelect =
     itemElement.querySelector(
-      ".v2-add-gourmet-selection-btn"
+      ".v2-gourmet-picker-select"
     );
 
-  if (addSelectionButton) {
-    addSelectionButton.addEventListener(
+  const registerButton =
+    itemElement.querySelector(
+      ".v2-register-gourmet-btn"
+    );
+
+  // -----------------------------------------
+  // 상단 드롭박스에서 선택한 장소 등록
+  // -----------------------------------------
+  if (
+    pickerSelect &&
+    registerButton
+  ) {
+    registerButton.addEventListener(
       "click",
       async () => {
-        addSelectionButton.disabled =
-          true;
+        const selectedPlaceId =
+          pickerSelect.value;
 
-        addSelectionButton.textContent =
-          "추가 중...";
+        if (!selectedPlaceId) {
+          window.alert(
+            gourmetType === "간식"
+              ? "등록할 간식 장소를 선택해 주세요."
+              : "등록할 식당을 선택해 주세요."
+          );
+
+          pickerSelect.focus();
+
+          return;
+        }
+
+        const itemData =
+          currentDays[dayId]
+            ?.items
+            ?.[itemId] || {};
+
+        const alreadySelectedIds =
+          [];
+
+        if (itemData.selectedPlaceId) {
+          alreadySelectedIds.push(
+            itemData.selectedPlaceId
+          );
+        }
+
+        Object.values(
+          itemData.selectedItems || {}
+        ).forEach((selection) => {
+          const placeId =
+            getSelectedPlaceId(selection);
+
+          if (placeId) {
+            alreadySelectedIds.push(
+              placeId
+            );
+          }
+        });
+
+        if (
+          alreadySelectedIds.includes(
+            selectedPlaceId
+          )
+        ) {
+          window.alert(
+            "이미 등록된 장소입니다."
+          );
+
+          return;
+        }
+
+        registerButton.disabled = true;
+        registerButton.textContent =
+          "등록 중...";
 
         try {
           const selectionRef =
@@ -1425,98 +1469,39 @@ function bindGourmetSelectionEvents(
           await set(
             selectionRef,
             {
-              placeId: ""
+              placeId:
+                selectedPlaceId
             }
+          );
+
+          pickerSelect.value = "";
+
+          console.log(
+            `✅ ${gourmetType} 장소 등록 완료`
           );
         } catch (error) {
           console.error(
-            "❌ 식사·간식 선택행 추가 실패",
+            "❌ 식사·간식 장소 등록 실패",
             error
           );
 
           window.alert(
-            "선택행을 추가하지 못했습니다."
+            "장소를 등록하지 못했습니다."
           );
 
-          addSelectionButton.disabled =
+          registerButton.disabled =
             false;
 
-          addSelectionButton.textContent =
-            gourmetType === "간식"
-              ? "➕ 간식 장소 추가"
-              : "➕ 식당 추가";
+          registerButton.textContent =
+            "등록";
         }
       }
     );
   }
 
-  itemElement
-    .querySelectorAll(
-      ".v2-dynamic-gourmet-select"
-    )
-    .forEach((selectElement) => {
-      const row =
-        selectElement.closest(
-          ".v2-gourmet-selection-row"
-        );
-
-      if (!row) {
-        return;
-      }
-
-      const selectionId =
-        row.dataset.selectionId;
-
-      const isLegacy =
-        row.dataset.isLegacy ===
-        "true";
-
-      selectElement.addEventListener(
-  "change",
-  async () => {
-    const selectedPlaceId =
-      selectElement.value;
-
-    selectElement.dataset
-      .selectedPlaceId =
-      selectedPlaceId;
-
-    try {
-      if (isLegacy) {
-        await set(
-          ref(
-            db,
-            `${tripBasePath}/days/${dayId}/items/${itemId}/selectedPlaceId`
-          ),
-          selectedPlaceId
-        );
-      } else {
-        await set(
-          ref(
-            db,
-            `${tripBasePath}/days/${dayId}/items/${itemId}/selectedItems/${selectionId}/placeId`
-          ),
-          selectedPlaceId
-        );
-      }
-
-      console.log(
-        "✅ 식사·간식 장소 선택 저장 완료"
-      );
-    } catch (error) {
-      console.error(
-        "❌ 식사·간식 장소 저장 실패",
-        error
-      );
-
-      window.alert(
-        "장소 선택을 저장하지 못했습니다."
-      );
-    }
-  }
-);
-    });
-
+  // -----------------------------------------
+  // 하단 등록 장소 삭제
+  // -----------------------------------------
   itemElement
     .querySelectorAll(
       ".v2-delete-gourmet-selection-btn"
@@ -1541,9 +1526,18 @@ function bindGourmetSelectionEvents(
       button.addEventListener(
         "click",
         async () => {
+          const shopName =
+            row
+              .querySelector(
+                ".v2-selected-gourmet-name"
+              )
+              ?.innerText
+              .trim() ||
+            "선택한 장소";
+
           const confirmed =
             window.confirm(
-              "이 장소 선택을 삭제하시겠습니까?"
+              `「${shopName}」을 삭제하시겠습니까?`
             );
 
           if (!confirmed) {
@@ -1552,7 +1546,7 @@ function bindGourmetSelectionEvents(
 
           button.disabled = true;
           button.textContent =
-            "...";
+            "삭제 중...";
 
           try {
             if (isLegacy) {
@@ -1577,12 +1571,12 @@ function bindGourmetSelectionEvents(
             );
 
             window.alert(
-              "선택한 장소를 삭제하지 못했습니다."
+              "등록된 장소를 삭제하지 못했습니다."
             );
 
             button.disabled = false;
             button.textContent =
-              "✕";
+              "삭제";
           }
         }
       );
@@ -2071,7 +2065,7 @@ function calculateTravelTotalBudget() {
 function refreshAllGourmetDropdowns() {
   document
     .querySelectorAll(
-      ".v2-dynamic-gourmet-select"
+      ".v2-gourmet-picker-select"
     )
     .forEach((selectElement) => {
       const itemElement =
@@ -2083,11 +2077,6 @@ function refreshAllGourmetDropdowns() {
         itemElement?.dataset
           .gourmetType ||
         "식사";
-
-      const selectedPlaceId =
-        selectElement.dataset
-          .selectedPlaceId ||
-        "";
 
       const filteredItems =
         gourmetItems.filter(
@@ -2102,9 +2091,9 @@ function refreshAllGourmetDropdowns() {
         <option value="">
           -- ${
             gourmetType === "간식"
-              ? "간식 장소"
-              : "식당"
-          } 선택 --
+              ? "간식 장소 선택"
+              : "식당 선택"
+          } --
         </option>
 
         ${filteredItems
@@ -2112,12 +2101,6 @@ function refreshAllGourmetDropdowns() {
             (item) => `
               <option
                 value="${escapeHtml(item.id)}"
-                ${
-                  item.id ===
-                  selectedPlaceId
-                    ? "selected"
-                    : ""
-                }
               >
                 ${escapeHtml(
                   item.shopName ||

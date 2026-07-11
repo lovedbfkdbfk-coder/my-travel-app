@@ -433,6 +433,217 @@
 .v2-delete-gourmet-selection-btn:hover {
     background-color: #FED7D7;
 }
+/* =========================================
+   식사·간식 상단 선택 / 하단 등록 목록
+========================================= */
+
+.restaurant-box {
+    text-align: left;
+}
+
+.v2-gourmet-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+
+.v2-gourmet-item-header .spot-name {
+    text-align: left;
+}
+
+.v2-gourmet-picker-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    width: 100%;
+    text-align: left;
+    flex-wrap: wrap;
+}
+
+.v2-gourmet-type-label {
+    flex: none;
+    margin: 0;
+    padding: 0;
+    min-width: auto;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #2D3748;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.v2-gourmet-picker-select {
+    flex: 0 1 260px;
+    width: 260px;
+    max-width: 100%;
+    min-width: 160px;
+    padding: 7px 9px;
+    border: 1px solid #CBD5E0;
+    border-radius: 6px;
+    background-color: #FFFFFF;
+    color: #2D3748;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: left;
+    text-align-last: left;
+}
+
+.v2-gourmet-picker-select option {
+    text-align: left;
+}
+
+.v2-register-gourmet-btn {
+    flex: none;
+    background-color: #DD6B20;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.snack-box .v2-register-gourmet-btn {
+    background-color: #D69E2E;
+}
+
+.v2-register-gourmet-btn:disabled {
+    background-color: #A0AEC0;
+    cursor: not-allowed;
+}
+
+.v2-selected-gourmet-section {
+    margin-top: 12px;
+    text-align: left;
+}
+
+.v2-selected-gourmet-heading {
+    margin-bottom: 7px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #E2E8F0;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #718096;
+    text-align: left;
+}
+
+.v2-dynamic-gourmet-list {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+    width: 100%;
+    text-align: left;
+}
+
+.v2-gourmet-selection-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 7px;
+    text-align: left;
+}
+
+.snack-box .v2-gourmet-selection-row {
+    background-color: #FFFFF0;
+}
+
+.v2-selected-gourmet-info {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    text-align: left;
+}
+
+.v2-selected-gourmet-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #2D3748;
+    text-align: left;
+}
+
+.v2-selected-gourmet-memo {
+    margin-top: 3px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #718096;
+    text-align: left;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+
+.v2-empty-gourmet-message {
+    width: 100%;
+    padding: 8px 2px;
+    color: #A0AEC0;
+    font-size: 0.8rem;
+    text-align: left;
+}
+
+.v2-delete-gourmet-selection-btn {
+    flex: none;
+    background-color: #FFF5F5;
+    color: #E53E3E;
+    border: 1px solid #FEB2B2;
+    border-radius: 6px;
+    padding: 6px 9px;
+    font-size: 0.76rem;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.v2-delete-gourmet-selection-btn:hover {
+    background-color: #FED7D7;
+}
+
+.v2-delete-gourmet-selection-btn:disabled {
+    color: #A0AEC0;
+    background-color: #F7FAFC;
+    border-color: #CBD5E0;
+    cursor: not-allowed;
+}
+
+/* 모바일 화면 */
+@media (max-width: 520px) {
+    .v2-gourmet-picker-row {
+        flex-wrap: nowrap;
+        gap: 5px;
+    }
+
+    .v2-gourmet-type-label {
+        font-size: 0.78rem;
+    }
+
+    .v2-gourmet-picker-select {
+        flex: 1;
+        width: auto;
+        min-width: 0;
+        font-size: 0.78rem;
+        padding: 7px 6px;
+    }
+
+    .v2-register-gourmet-btn {
+        padding: 7px 9px;
+        font-size: 0.75rem;
+    }
+
+    .v2-gourmet-selection-row {
+        align-items: flex-start;
+    }
+}    
     </style>
 </head>
 <body>
@@ -538,7 +749,7 @@
             </div>
         </div>
     </div>
-    </script>
+</script>
 <script type="module" src="./app.js"></script>
 </body>
 </html>
