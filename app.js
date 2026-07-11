@@ -1033,56 +1033,149 @@ function bindItemDelete(
 // 일정 추가
 // =========================================
 
-async function addNewItem(
-  dayId,
-  section
-) {
-  const typeSelect =
-    section.querySelector(
-      ".v2-new-item-type"
-    );
-
-  if (!typeSelect) return;
-
-  const selectedType = typeSelect.value;
-const enteredTime = window.prompt(
-  "추가할 시간을 입력해 주세요.\n예: 09:30 또는 1430",
-  ""
-);
-
-if (enteredTime === null) {
-  return;
-}
-
-const normalizedTime =
-  normalizeTimeInput(enteredTime);
-
-if (
-  normalizedTime &&
-  timeToMinutes(normalizedTime) ===
-    Number.MAX_SAFE_INTEGER
-) {
-  window.alert(
-    "시간 형식이 올바르지 않습니다.\n예: 09:30"
+async function addNewItem(dayId, section) {
+  const typeSelect = section.querySelector(
+    ".v2-new-item-type"
   );
 
-  return;
-}
-  const dayData = currentDays[dayId] || {};
+  if (!typeSelect) {
+    console.error(
+      "❌ 일정 종류 선택창을 찾지 못했습니다."
+    );
 
-  const items = Object.values(
+    window.alert(
+      "일정 종류 선택창을 찾지 못했습니다."
+    );
+
+    return;
+  }
+
+  const selectedType = typeSelect.value;
+
+  // -----------------------------------------
+  // 시간 입력
+  // -----------------------------------------
+  const enteredTime = window.prompt(
+    "추가할 시간을 입력해 주세요.\n예: 09:30 또는 1430",
+    ""
+  );
+
+  // 취소 버튼을 누른 경우
+  if (enteredTime === null) {
+    return;
+  }
+
+  // -----------------------------------------
+  // 시간 형식 변환
+  // 이 함수 안에서 직접 처리하므로
+  // normalizeTimeInput 외부 함수가 없어도 작동합니다.
+  // -----------------------------------------
+  const rawTime = String(enteredTime).trim();
+
+  let normalizedTime = "";
+
+  if (rawTime === "") {
+    normalizedTime = "";
+  } else if (/^\d{3}$/.test(rawTime)) {
+    // 930 → 09:30
+    const hour = Number(rawTime.slice(0, 1));
+    const minute = Number(rawTime.slice(1));
+
+    if (
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      window.alert(
+        "시간 형식이 올바르지 않습니다.\n예: 09:30"
+      );
+
+      return;
+    }
+
+    normalizedTime =
+      `${String(hour).padStart(2, "0")}:` +
+      `${String(minute).padStart(2, "0")}`;
+  } else if (/^\d{4}$/.test(rawTime)) {
+    // 1430 → 14:30
+    const hour = Number(rawTime.slice(0, 2));
+    const minute = Number(rawTime.slice(2));
+
+    if (
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      window.alert(
+        "시간 형식이 올바르지 않습니다.\n예: 09:30"
+      );
+
+      return;
+    }
+
+    normalizedTime =
+      `${String(hour).padStart(2, "0")}:` +
+      `${String(minute).padStart(2, "0")}`;
+  } else {
+    // 9:30, 09:30, 9.30 처리
+    const convertedTime = rawTime.replace(".", ":");
+
+    const match = convertedTime.match(
+      /^(\d{1,2}):(\d{1,2})$/
+    );
+
+    if (!match) {
+      window.alert(
+        "시간 형식이 올바르지 않습니다.\n예: 09:30 또는 1430"
+      );
+
+      return;
+    }
+
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+
+    if (
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      window.alert(
+        "시간 형식이 올바르지 않습니다.\n예: 09:30"
+      );
+
+      return;
+    }
+
+    normalizedTime =
+      `${String(hour).padStart(2, "0")}:` +
+      `${String(minute).padStart(2, "0")}`;
+  }
+
+  // -----------------------------------------
+  // 현재 일차의 기존 일정 확인
+  // -----------------------------------------
+  const dayData = currentDays[dayId] || {};
+  const existingItems = Object.values(
     dayData.items || {}
   );
 
-  const highestOrder = items.reduce(
-    (maximum, item) =>
-      Math.max(
+  const highestOrder = existingItems.reduce(
+    (maximum, item) => {
+      return Math.max(
         maximum,
         Number(item.order) || 0
-      ),
+      );
+    },
     0
   );
 
+  // -----------------------------------------
+  // 종류별 기본 이름
+  // -----------------------------------------
   const defaultNames = {
     place: "새 일정",
     meal: "🍽️ 식사",
@@ -1093,10 +1186,13 @@ if (
     order: highestOrder + 1,
     type: selectedType,
     time: normalizedTime,
-    name: defaultNames[selectedType],
+    name:
+      defaultNames[selectedType] ||
+      "새 일정",
     budget: 0
   };
 
+  // 일반 일정
   if (selectedType === "place") {
     newItem.descriptionHtml =
       "이곳을 눌러 이동경로와 설명을 입력하세요.";
@@ -1104,24 +1200,54 @@ if (
     newItem.mapLink = "";
   }
 
+  // 식사
   if (selectedType === "meal") {
     newItem.selectedType = "식사";
     newItem.selectedPlaceId = "";
   }
 
+  // 간식
   if (selectedType === "snack") {
     newItem.selectedType = "간식";
     newItem.selectedPlaceId = "";
   }
 
-  const newItemRef = push(
-    ref(
-      db,
-      `${tripBasePath}/days/${dayId}/items`
-    )
+  // -----------------------------------------
+  // Firebase 저장
+  // -----------------------------------------
+  const itemsPath =
+    `${tripBasePath}/days/${dayId}/items`;
+
+  console.log(
+    "Firebase 저장 경로:",
+    itemsPath
   );
 
-  await set(newItemRef, newItem);
+  console.log(
+    "Firebase 저장 데이터:",
+    newItem
+  );
+
+  try {
+    const newItemRef = push(
+      ref(db, itemsPath)
+    );
+
+    await set(newItemRef, newItem);
+
+    console.log(
+      `✅ ${dayId}에 ${normalizedTime || "시간 미지정"} 항목 추가 완료`
+    );
+  } catch (error) {
+    console.error(
+      "❌ 일정 추가 중 Firebase 오류:",
+      error
+    );
+
+    window.alert(
+      "일정을 추가하지 못했습니다.\n브라우저 콘솔의 오류를 확인해 주세요."
+    );
+  }
 }
 
 // =========================================
