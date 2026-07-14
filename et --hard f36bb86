@@ -1,0 +1,35 @@
+[33m7a3b131[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtravel-v2[m[33m, [m[1;31morigin/travel-v2[m[33m)[m 읽기전용으로 변경
+[33m22d5426[m Google 로그인 연결
+[33m80cc566[m 관리자 영역 추가
+[33m5bb2b89[m 관리자 로그인 버튼 추가
+[33mf36bb86[m 미리보기 메타 태그 추가
+[33mc8d2827[m 등록 식당 간식 지도 버튼 추가
+[33m506263f[m 식사 간식 선택 UI 왼쪽 정렬 개선
+[33ma53fa5d[m 구형 중복 이벤트 제거
+[33mcb1b9b7[m 구형 중복 이벤트 제거
+[33mef6282d[m 식사 간식 선택 상세정보 표시 기능 추가
+[33mde9abd6[m 맛집 간식 관리 및 준비물 목록 복원
+[33me7fcf8b[m 모든 일차 식사 간식 다중 등록 기능 추가
+[33mff58012[m 일정 추가 시간정렬 및 지도검색 오류 수정
+[33mb36732c[m 시간 입력 후 일정 추가 오류 수정
+[33m3f80ed3[m 일정 시간 자동정렬 및 구글지도 검색 추가
+[33m91eb88d[m 동적 일차 추가 기능 구현
+[33mf5c4f78[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m 일정 입력 Firebase 동기화 최종 수정
+[33m6894179[m LocalStorage 제거 및 일정 Firebase 저장 수정
+[33m8d06f8e[m Firebase 연결 및 모바일 동기화 수정
+[33m54a2421[m Firebase 연결 수정 전 백업
+[33m4a6d8de[m Update index.html
+[33m8e13e4c[m Update index.html
+[33ma23db4a[m Update index.html
+[33m6b44723[m Update index.html
+[33m357fd72[m Update index.html
+[33m154e456[m Update index.html
+[33m9b6e36f[m Update index.html
+[33m22a103e[m Update index.html
+[33m2fa4519[m Update index.html
+[33mf7d7e89[m Update index.html
+[33me97d13a[m Update index.html
+[33md1a1c57[m Merge pull request #1 from lovedbfkdbfk-coder/lovedbfkdbfk-coder-patch-1
+[33mee4790d[m Update index.html
+[33m42f2947[m Update index.html
+[33m389202c[m Add files via upload
